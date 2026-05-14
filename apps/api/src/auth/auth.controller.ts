@@ -6,6 +6,8 @@ import {
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -14,8 +16,30 @@ export class AuthController {
     private readonly authService: AuthService,
   ) {}
 
+  @Post('register')
+  register(
+    @Body() registerDto: RegisterDto,
+  ) {
+    return this.authService.register(
+      registerDto,
+    );
+  }
+
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(
+    @Body() loginDto: LoginDto,
+  ) {
+    return this.authService.login(
+      loginDto,
+    );
+  }
+
+  @Post('refresh')
+  refresh(
+    @Body() dto: RefreshDto,
+  ) {
+    return this.authService.refresh(
+      dto.refreshToken,
+    );
   }
 }

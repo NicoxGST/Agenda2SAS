@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-
 import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -14,11 +13,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     UsersModule,
 
-    PassportModule,
+    PassportModule.register({
+      defaultStrategy: 'jwt',
+    }),
 
     JwtModule.register({
       secret: 'SUPER_SECRET_KEY',
-
       signOptions: {
         expiresIn: '1d',
       },
@@ -32,6 +32,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtStrategy,
   ],
 
-  exports: [AuthService],
+  exports: [
+    AuthService,
+    PassportModule,
+  ],
 })
 export class AuthModule {}
