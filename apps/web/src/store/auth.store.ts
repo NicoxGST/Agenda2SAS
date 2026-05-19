@@ -1,53 +1,130 @@
-type AuthUser = {
+import {
+  useSyncExternalStore,
+} from 'react';
+
+type User = {
+  id: number;
   email: string;
   role: string;
 };
 
 type AuthState = {
-  accessToken: string | null;
-  user: AuthUser | null;
+  user: User | null;
+  token: string | null;
 };
 
 const STORAGE_KEY =
   'agenda_auth';
 
-export const authStore = {
+const listeners =
+  new Set<
+    () => void
+  >();
 
-  get(): AuthState {
+function emit() {
+  listeners.forEach(
+    (listener) =>
+      listener(),
+  );
+}
 
-    const raw =
-      localStorage.getItem(
-        STORAGE_KEY,
-      );
+function subscribe(
+  listener: () => void,
+) {
+  listeners.add(
+    listener,
+  );
 
-    if (!raw) {
-      return {
-        accessToken: null,
-        user: null,
-      };
-    }
-
-    return JSON.parse(raw);
-  },
-
-  set(data: AuthState) {
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data),
+  return () =>
+    listeners.delete(
+      listener,
     );
-  },
+}
 
-  clear() {
+function parseJwt(
+  token: string,
+) {
+  const payload =
+    token.split('.')[1];
 
-    localStorage.removeItem(
+  const decoded =
+    JSON.parse(
+      atob(payload),
+    );
+
+  return {
+    id: decoded.sub,
+    email:
+      decoded.email,
+    role:
+      decoded.role,
+  };
+}
+
+function getStoredAuth(): AuthState {
+  const token =
+    localStorage.getItem(
       STORAGE_KEY,
     );
-  },
 
-  isAuthenticated() {
+  if (!token) {
+    return {
+      user: null,
+      token: null,
+    };
+  }
 
-    return !!this.get()
-      .accessToken;
-  },
-};
+  return {
+    token,
+    user:
+      parseJwt(
+        token,
+      ),
+  };
+}
+
+let authState =
+  getStoredAuth();
+
+export function getAuth() {
+  return authState;
+}
+
+export function useAuth() {
+  return useSyncExternalStore(
+    subscribe,
+    () => authState,
+  );
+}
+
+export function login(
+  token: string,
+) {
+  localStorage.setItem(
+    STORAGE_KEY,
+    token,
+  );
+
+  authState = {
+    token,
+    user:
+      parseJwt(
+        token,
+      ),
+  };
+
+  emit();
+}
+
+export function logout() {
+  localStorage.removeItem(
+    STORAGE_KEY,
+  );
+
+  authState = {
+    token: null,
+    user: null,
+  };
+
+  emit();
+}

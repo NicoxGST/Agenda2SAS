@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { login } from '../services/auth.service';
-import { authStore } from '../store/auth.store';
-import { parseJwt } from '../services/jwt';
+import { login as saveAuth } from '../store/auth.store';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -16,19 +15,46 @@ export function LoginPage() {
     try {
       setError('');
 
-      const data = await login(email, password);
+      const data = await login(
+        email,
+        password,
+      );
 
-      const user = parseJwt(data.accessToken);
+      saveAuth(
+        data.accessToken,
+      );
 
-      authStore.set({
-        accessToken: data.accessToken,
-        user: {
-          email: user.email,
-          role: user.role,
-        },
-      });
+      const role =
+        JSON.parse(
+          atob(
+            data.accessToken
+              .split('.')[1],
+          ),
+        ).role;
 
-      navigate('/');
+      if (
+        role === 'CLIENT'
+      ) {
+        navigate(
+          '/client',
+        );
+
+        return;
+      }
+
+      if (
+        role === 'WORKER'
+      ) {
+        navigate(
+          '/worker',
+        );
+
+        return;
+      }
+
+      navigate(
+        '/admin',
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -40,19 +66,27 @@ export function LoginPage() {
 
       <input
         type="email"
-        placeholder="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) =>
+          setEmail(
+            e.target.value,
+          )
+        }
       />
 
       <input
         type="password"
-        placeholder="password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) =>
+          setPassword(
+            e.target.value,
+          )
+        }
       />
 
-      <button onClick={handleLogin}>
+      <button
+        onClick={handleLogin}
+      >
         Entrar
       </button>
 

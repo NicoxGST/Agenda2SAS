@@ -1,26 +1,13 @@
-import {
-  Link,
-  Outlet,
-} from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+
+import { Navbar } from '../components/layout/Navbar';
 
 export function MainLayout() {
   return (
-    <div>
-      <nav>
-        <Link to="/">
-          Inicio
-        </Link>
-
-        <Link to="/login">
-          Login
-        </Link>
-
-        <Link to="/register">
-          Registro
-        </Link>
-      </nav>
+    <>
+      <Navbar />
 
       <Outlet />
-    </div>
+    </>
   );
 }
