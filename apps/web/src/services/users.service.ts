@@ -5,7 +5,7 @@ function authHeaders() {
   const auth = getAuth();
 
   return {
-    Authorization: `Bearer ${auth.token}`,
+    Authorization: `Bearer ${auth.accessToken}`,
   };
 }
 

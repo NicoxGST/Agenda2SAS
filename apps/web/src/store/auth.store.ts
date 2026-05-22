@@ -4,13 +4,17 @@ import {
 
 type User = {
   id: number;
+  name: string;
   email: string;
   role: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type AuthState = {
+  accessToken: string | null;
+  refreshToken: string | null;
   user: User | null;
-  token: string | null;
 };
 
 const STORAGE_KEY =
@@ -41,46 +45,45 @@ function subscribe(
     );
 }
 
-function parseJwt(
-  token: string,
-) {
-  const payload =
-    token.split('.')[1];
-
-  const decoded =
-    JSON.parse(
-      atob(payload),
-    );
-
-  return {
-    id: decoded.sub,
-    email:
-      decoded.email,
-    role:
-      decoded.role,
-  };
-}
-
 function getStoredAuth(): AuthState {
-  const token =
+
+  const raw =
     localStorage.getItem(
       STORAGE_KEY,
     );
 
-  if (!token) {
+  if (!raw) {
     return {
       user: null,
-      token: null,
+      accessToken: null,
+      refreshToken: null,
     };
   }
 
-  return {
-    token,
-    user:
-      parseJwt(
-        token,
-      ),
-  };
+  try {
+
+    const parsed =
+      JSON.parse(raw);
+
+    return {
+      accessToken:
+        parsed.accessToken,
+
+      refreshToken:
+        parsed.refreshToken,
+
+      user:
+        parsed.user ?? null,
+    };
+
+  } catch {
+
+    return {
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+    };
+  }
 }
 
 let authState =
@@ -97,34 +100,36 @@ export function useAuth() {
   );
 }
 
-export function login(
-  token: string,
-) {
-  localStorage.setItem(
-    STORAGE_KEY,
-    token,
-  );
-
-  authState = {
-    token,
-    user:
-      parseJwt(
-        token,
-      ),
-  };
-
-  emit();
-}
-
 export function logout() {
   localStorage.removeItem(
     STORAGE_KEY,
   );
 
   authState = {
-    token: null,
+    accessToken: null,
+    refreshToken: null,
     user: null,
   };
+
+  emit();
+}
+
+export function setAuth(
+  accessToken: string,
+  refreshToken: string,
+  user: User,
+) {
+
+  authState = {
+    accessToken,
+    refreshToken,
+    user,
+  };
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(authState),
+  );
 
   emit();
 }

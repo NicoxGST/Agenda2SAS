@@ -1,12 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom';
-
 import { MainLayout } from '../layouts/MainLayout';
 
 import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
-
-import { RouteGuard } from '../components/layout/ProtectedRoute';
+import { RouteGuard } from '../components/auth/RouteGuard';
+import { ROLES } from '../constants/roles';
 
 import { AdminPage } from '../pages/admin/AdminPage';
 import { WorkerPage } from '../pages/trabajador/WorkerPage';
@@ -35,13 +34,13 @@ export const router =
         },
 
         {
-          path: 'admin',
+          path: ROLES.ADMIN,
 
           element: (
             <RouteGuard
               allowedRoles={[
-                'ADMIN',
-                'SUPER_ADMIN',
+                ROLES.ADMIN,
+                ROLES.SUPER_ADMIN,
               ]}
             >
               <AdminPage />
@@ -50,14 +49,14 @@ export const router =
         },
 
         {
-          path: 'worker',
+          path: ROLES.WORKER,
 
           element: (
             <RouteGuard
               allowedRoles={[
-                'WORKER',
-                'ADMIN',
-                'SUPER_ADMIN',
+                ROLES.WORKER,
+                ROLES.ADMIN,
+                ROLES.SUPER_ADMIN,
               ]}
             >
               <WorkerPage />
@@ -66,15 +65,15 @@ export const router =
         },
 
         {
-          path: 'client',
+          path: ROLES.CLIENT,
 
           element: (
             <RouteGuard
               allowedRoles={[
-                'CLIENT',
-                'WORKER',
-                'ADMIN',
-                'SUPER_ADMIN',
+                ROLES.CLIENT,
+                ROLES.WORKER,
+                ROLES.ADMIN,
+                ROLES.SUPER_ADMIN,
               ]}
             >
               <ClientPage />

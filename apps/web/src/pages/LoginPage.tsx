@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { login } from '../services/auth.service';
-import { login as saveAuth } from '../store/auth.store';
+import { login, getMe, } from '../services/auth.service';
+import { setAuth, } from '../store/auth.store';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -20,17 +20,19 @@ export function LoginPage() {
         password,
       );
 
-      saveAuth(
+      const user =
+        await getMe(
+          data.accessToken,
+        );
+
+      setAuth(
         data.accessToken,
+        data.refreshToken,
+        user,
       );
 
       const role =
-        JSON.parse(
-          atob(
-            data.accessToken
-              .split('.')[1],
-          ),
-        ).role;
+        user.role;
 
       if (
         role === 'CLIENT'

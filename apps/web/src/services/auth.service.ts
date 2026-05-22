@@ -17,6 +17,22 @@ export async function login(
   );
 }
 
+export async function logoutRequest(
+  token: string,
+) {
+  return apiFetch(
+    '/auth/logout',
+    {
+      method: 'POST',
+
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    },
+  );
+}
+
 export async function register(
   name: string,
   email: string,
@@ -32,6 +48,35 @@ export async function register(
         email,
         password,
       }),
+    },
+  );
+}
+
+export async function refreshSession(
+  refreshToken: string,
+) {
+  return apiFetch(
+    '/auth/refresh',
+    {
+      method: 'POST',
+
+      body: JSON.stringify({
+        refreshToken,
+      }),
+    },
+  );
+}
+
+export async function getMe(
+  token: string,
+) {
+  return apiFetch(
+    '/auth/me',
+    {
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
     },
   );
 }

@@ -1,16 +1,8 @@
-import {
-  Link,
-  useNavigate,
-} from 'react-router-dom';
-
-import {
-  useState,
-} from 'react';
-
-import {
-  useAuth,
-  logout,
-} from '../../store/auth.store';
+import { Link, useNavigate, } from 'react-router-dom';
+import { useState, } from 'react';
+import { useAuth, logout, } from '../../store/auth.store';
+import { logoutRequest, } from '../../services/auth.service';
+import { ROLES } from '../../constants/roles';
 
 type MenuItem = {
   to: string;
@@ -22,7 +14,7 @@ const roleMenus:
     string,
     MenuItem[]
   > = {
-  CLIENT: [
+  [ROLES.CLIENT]: [
     {
       to: '/client',
       label:
@@ -30,7 +22,7 @@ const roleMenus:
     },
   ],
 
-  WORKER: [
+  [ROLES.WORKER]: [
     {
       to: '/worker',
       label:
@@ -38,7 +30,7 @@ const roleMenus:
     },
   ],
 
-  ADMIN: [
+  [ROLES.ADMIN]: [
     {
       to: '/admin',
       label:
@@ -52,7 +44,7 @@ const roleMenus:
     },
   ],
 
-  SUPER_ADMIN: [
+  [ROLES.SUPER_ADMIN]: [
     {
       to: '/admin',
       label:
@@ -91,12 +83,29 @@ export function Navbar() {
     setOpen(false);
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
 
-    closeMenu();
+    try {
 
-    navigate('/');
+      if (auth.accessToken) {
+        await logoutRequest(
+          auth.accessToken,
+        );
+      }
+
+    } catch (err) {
+
+      console.error(
+        'Logout request failed',
+        err,
+      );
+
+    } finally {
+
+      logout();
+
+      navigate('/');
+    }
   }
 
   return (

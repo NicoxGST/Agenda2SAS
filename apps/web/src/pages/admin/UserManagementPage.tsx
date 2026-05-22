@@ -1,16 +1,7 @@
-import {
-  useEffect,
-  useState,
-} from 'react';
-
-import {
-  getUsers,
-  deleteUser,
-  createUser,
-  updateUserRole,
-} from '../../services/users.service';
-
+import { useEffect, useState, } from 'react';
+import { getUsers, deleteUser, createUser, updateUserRole, } from '../../services/users.service';
 import { useAuth } from '../../store/auth.store';
+import { ROLES } from '../../constants/roles';
 
 type User = {
   id: number;
@@ -41,7 +32,7 @@ export function UserManagementPage() {
     useState('');
 
   const [role, setRole] =
-    useState('CLIENT');
+    useState(ROLES.CLIENT);
   
   const auth =
     useAuth();
@@ -158,23 +149,23 @@ export function UserManagementPage() {
     users.filter(
       (user) =>
         user.role ===
-          'ADMIN' ||
+          ROLES.ADMIN ||
         user.role ===
-          'SUPER_ADMIN',
+          ROLES.SUPER_ADMIN,
     );
 
   const workers =
     users.filter(
       (user) =>
         user.role ===
-          'WORKER',
+          ROLES.WORKER,
     );
 
   const clients =
     users.filter(
       (user) =>
         user.role ===
-          'CLIENT',
+          ROLES.CLIENT,
     );
 
 
@@ -194,18 +185,18 @@ export function UserManagementPage() {
 
     if (
       currentUser.role ===
-      'SUPER_ADMIN'
+      ROLES.SUPER_ADMIN
     ) {
       return true;
     }
 
     if (
       currentUser.role ===
-      'ADMIN'
+      ROLES.ADMIN
     ) {
       return (
         target.role !==
-        'SUPER_ADMIN'
+        ROLES.SUPER_ADMIN
       );
     }
 
@@ -215,20 +206,20 @@ export function UserManagementPage() {
   function availableRoles() {
     if (
       currentUser?.role ===
-      'SUPER_ADMIN'
+      ROLES.SUPER_ADMIN
     ) {
       return [
-        'CLIENT',
-        'WORKER',
-        'ADMIN',
-        'SUPER_ADMIN',
+        ROLES.CLIENT,
+        ROLES.WORKER,
+        ROLES.ADMIN,
+        ROLES.SUPER_ADMIN,
       ];
     }
 
     return [
-      'CLIENT',
-      'WORKER',
-      'ADMIN',
+      ROLES.CLIENT,
+      ROLES.WORKER,
+      ROLES.ADMIN,
     ];
   }
   
@@ -348,15 +339,15 @@ export function UserManagementPage() {
           }
         >
           <option value="CLIENT">
-            CLIENT
+            Cliente
           </option>
 
           <option value="WORKER">
-            WORKER
+            Trabajador/a
           </option>
 
           <option value="ADMIN">
-            ADMIN
+            Administrador/a
           </option>
         </select>
 

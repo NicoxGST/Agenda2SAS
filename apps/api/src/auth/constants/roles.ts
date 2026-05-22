@@ -1,4 +1,4 @@
-import { Role } from '../enums/role.enum';
+import { Role } from '../../common/enums/role.enum';
 
 export function isSuperAdmin(role: Role): boolean {
   return role === Role.SUPER_ADMIN;

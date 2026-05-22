@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -257,4 +258,39 @@ export class UsersService {
       },
     });
   }
+
+  async updateMe(
+    userId: number,
+    dto: {
+      name?: string;
+      password?: string;
+    },
+  ) {
+
+    const data: any = {};
+
+    if (dto.name) {
+      data.name = dto.name;
+    }
+
+    if (dto.password) {
+      data.password =
+        await bcrypt.hash(
+          dto.password,
+          10,
+        );
+    }
+
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+
+      data,
+
+      select:
+        this.safeSelect,
+    });
+  }
+  
 }

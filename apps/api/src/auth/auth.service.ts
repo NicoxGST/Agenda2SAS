@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {Role,} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -14,8 +15,14 @@ import { LoginDto } from './dto/login.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
+    private usersService:
+      UsersService,
+
+    private jwtService:
+      JwtService,
+
+    private configService:
+      ConfigService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -120,7 +127,9 @@ export class AuthService {
     };
   }
 
-  async generateTokens(user: any) {
+  async generateTokens(
+    user: any,
+  ) {
 
     const payload = {
       sub: user.id,
@@ -132,7 +141,15 @@ export class AuthService {
       this.jwtService.sign(
         payload,
         {
-          expiresIn: '15m',
+          secret:
+            this.configService.getOrThrow<string>(
+              'JWT_SECRET',
+            ),
+
+          expiresIn:
+            this.configService.getOrThrow<any>(
+              'JWT_EXPIRES_IN',
+            ),
         },
       );
 
@@ -140,7 +157,15 @@ export class AuthService {
       this.jwtService.sign(
         payload,
         {
-          expiresIn: '7d',
+          secret:
+            this.configService.getOrThrow<string>(
+              'JWT_REFRESH_SECRET',
+            ),
+
+          expiresIn:
+            this.configService.getOrThrow<any>(
+              'JWT_REFRESH_EXPIRES_IN',
+            ),
         },
       );
 
@@ -157,8 +182,13 @@ export class AuthService {
     const payload =
       this.jwtService.verify(
         refreshToken,
+        {
+          secret:
+            this.configService.getOrThrow<string>(
+              'JWT_REFRESH_SECRET',
+            ),
+        },
       );
-
     const user =
       await this.usersService.findById(
         payload.sub,
@@ -202,6 +232,27 @@ export class AuthService {
     );
 
     return tokens;
+  }
+
+  async logout(
+    userId: number,
+  ) {
+
+    await this.usersService.updateRefreshToken(
+      userId,
+      null,
+    );
+
+    return {
+      message:
+        'Logged out successfully',
+    };
+  }
+
+  async me(userId: number) {
+    return this.usersService.findPublicById(
+      userId,
+    );
   }
 
 }

@@ -1,8 +1,11 @@
 import { Role } from '@prisma/client';
 
-export const ROLE_LEVELS: Record<Role, number> = {
-  SUPER_ADMIN: 4,
-  ADMIN: 3,
-  WORKER: 2,
-  CLIENT: 1,
+export const ROLE_LEVELS = {
+  [Role.CLIENT]: 1,
+
+  [Role.WORKER]: 2,
+
+  [Role.ADMIN]: 3,
+
+  [Role.SUPER_ADMIN]: 4,
 };
