@@ -1,148 +1,119 @@
-import { Link, useNavigate, } from 'react-router-dom';
-import { useState, } from 'react';
-import { useAuth, logout, } from '../../store/auth.store';
-import { logoutRequest, } from '../../services/auth.service';
-import { ROLES } from '../../constants/roles';
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+import { ROLES } from "../../constants/roles";
+import { logoutRequest } from "../../services/auth.service";
+import { logout, useAuth } from "../../store/auth.store";
 
 type MenuItem = {
   to: string;
   label: string;
 };
 
-const roleMenus:
-  Record<
-    string,
-    MenuItem[]
-  > = {
+const roleMenus: Record<string, MenuItem[]> = {
   [ROLES.CLIENT]: [
     {
-      to: '/client',
-      label:
-        'Mi Panel',
+      to: "/client",
+      label: "Mi Panel",
     },
   ],
 
   [ROLES.WORKER]: [
     {
-      to: '/worker',
-      label:
-        'Gestor',
+      to: "/worker",
+      label: "Gestor",
     },
   ],
 
   [ROLES.ADMIN]: [
     {
-      to: '/admin',
-      label:
-        'Panel Admin',
+      to: "/admin",
+      label: "Panel Admin",
     },
 
     {
-      to: '/users',
-      label:
-        'Gestión',
+      to: "/users",
+      label: "Gestion",
+    },
+
+    {
+      to: "/servicios",
+      label: "Servicios",
+    },
+
+    {
+      to: "/productos",
+      label: "Productos",
     },
   ],
 
   [ROLES.SUPER_ADMIN]: [
     {
-      to: '/admin',
-      label:
-        'Panel Admin',
+      to: "/admin",
+      label: "Panel Admin",
     },
 
     {
-      to: '/users',
-      label:
-        'Gestión',
+      to: "/users",
+      label: "Gestion",
+    },
+
+    {
+      to: "/servicios",
+      label: "Servicios",
+    },
+
+    {
+      to: "/productos",
+      label: "Productos",
     },
   ],
 };
 
 export function Navbar() {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
-  const auth =
-    useAuth();
+  const auth = useAuth();
 
-  const user =
-    auth.user;
+  const user = auth.user;
 
-  const [open, setOpen] =
-    useState(false);
+  const [open, setOpen] = useState(false);
 
-  const menu =
-    user
-      ? roleMenus[
-          user.role
-        ] || []
-      : [];
+  const menu = user ? roleMenus[user.role] || [] : [];
 
   function closeMenu() {
     setOpen(false);
   }
 
   async function handleLogout() {
-
     try {
-
       if (auth.accessToken) {
-        await logoutRequest(
-          auth.accessToken,
-        );
+        await logoutRequest(auth.accessToken);
       }
-
     } catch (err) {
-
-      console.error(
-        'Logout request failed',
-        err,
-      );
-
+      console.error("Logout request failed", err);
     } finally {
-
       logout();
 
-      navigate('/');
+      navigate("/");
     }
   }
 
   return (
     <nav>
-      <Link to="/">
-        Inicio
-      </Link>
+      <Link to="/">Inicio</Link>
 
-      <button
-        onClick={() =>
-          setOpen(
-            !open,
-          )
-        }
-      >
-        ☰
-      </button>
+      <button onClick={() => setOpen(!open)}>Menu</button>
 
       {open && (
         <div>
           {!user && (
             <>
-              <Link
-                to="/login"
-                onClick={
-                  closeMenu
-                }
-              >
+              <Link to="/login" onClick={closeMenu}>
                 Login
               </Link>
 
-              <Link
-                to="/register"
-                onClick={
-                  closeMenu
-                }
-              >
+              <Link to="/register" onClick={closeMenu}>
                 Registro
               </Link>
             </>
@@ -150,37 +121,13 @@ export function Navbar() {
 
           {user && (
             <>
-              {menu.map(
-                (
-                  item,
-                ) => (
-                  <Link
-                    key={
-                      item.to
-                    }
+              {menu.map((item) => (
+                <Link key={item.to} to={item.to} onClick={closeMenu}>
+                  {item.label}
+                </Link>
+              ))}
 
-                    to={
-                      item.to
-                    }
-
-                    onClick={
-                      closeMenu
-                    }
-                  >
-                    {
-                      item.label
-                    }
-                  </Link>
-                ),
-              )}
-
-              <button
-                onClick={
-                  handleLogout
-                }
-              >
-                Salir
-              </button>
+              <button onClick={handleLogout}>Salir</button>
             </>
           )}
         </div>

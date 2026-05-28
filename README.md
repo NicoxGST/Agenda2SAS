@@ -21,19 +21,19 @@ apps/web
 
 ## Backend
 
-* NestJS
-* TypeScript
-* Prisma
-* PostgreSQL
-* JWT
-* bcrypt
+- NestJS
+- TypeScript
+- Prisma
+- PostgreSQL
+- JWT
+- bcrypt
 
 ## Frontend
 
-* React
-* Vite
-* TypeScript
-* React Router
+- React
+- Vite
+- TypeScript
+- React Router
 
 ---
 
@@ -90,11 +90,11 @@ pnpm dev
 
 La aplicación utiliza:
 
-* Access Token JWT
-* Refresh Token JWT
-* Refresh automático frontend
-* Logout invalidando refresh token
-* Persistencia de sesión
+- Access Token JWT
+- Refresh Token JWT
+- Refresh automático frontend
+- Logout invalidando refresh token
+- Persistencia de sesión
 
 ---
 
@@ -151,10 +151,10 @@ Retorna usuario autenticado actual.
 
 Roles disponibles:
 
-* SUPER_ADMIN
-* ADMIN
-* WORKER
-* CLIENT
+- SUPER_ADMIN
+- ADMIN
+- WORKER
+- CLIENT
 
 Jerarquía:
 
@@ -166,12 +166,12 @@ SUPER_ADMIN > ADMIN > WORKER > CLIENT
 
 # Reglas de negocio
 
-* Los usuarios registrados entran como CLIENT.
-* Solo SUPER_ADMIN puede cambiar roles.
-* Un usuario no puede cambiar su propio rol.
-* No se puede eliminar el último SUPER_ADMIN.
-* Logout invalida refresh token.
-* Passwords se almacenan hasheadas con bcrypt.
+- Los usuarios registrados entran como CLIENT.
+- Solo SUPER_ADMIN puede cambiar roles.
+- Un usuario no puede cambiar su propio rol.
+- No se puede eliminar el último SUPER_ADMIN.
+- Logout invalida refresh token.
+- Passwords se almacenan hasheadas con bcrypt.
 
 ---
 
@@ -215,15 +215,15 @@ PATCH  /users/me
 
 # Seguridad implementada
 
-* JWT authentication
-* Refresh token rotation
-* Guards
-* RBAC
-* Password hashing
-* DTO validation
-* ValidationPipe global
-* Protected routes frontend
-* Auto refresh frontend
+- JWT authentication
+- Refresh token rotation
+- Guards
+- RBAC
+- Password hashing
+- DTO validation
+- ValidationPipe global
+- Protected routes frontend
+- Auto refresh frontend
 
 ---
 
@@ -239,13 +239,42 @@ Sistema de sesión y protección de rutas operativos.
 
 ## Pendiente
 
-* Reservas
-* Calendario
-* Servicios
-* Productos
-* Chatbot
-* Pagos
-* Notificaciones
+- Reservas
+- Calendario
+- Servicios
+- Productos
+- Chatbot
+- Pagos
+- Notificaciones
 
 ```
+
 ```
+
+#Alejandra
+
+## Cambios agregados
+
+- Se mantuvo la autenticación existente con JWT, refresh token, guards y roles.
+- Se agregó el módulo de **servicios**:
+  - Modelo Prisma `Service`.
+  - CRUD backend protegido por roles.
+  - Página frontend `/servicios`.
+  - Conexión usando `apiFetch()`.
+
+- Se agregó el módulo de **productos**:
+  - Modelo Prisma `Product`.
+  - CRUD backend protegido por roles.
+  - Página frontend `/productos`.
+  - Conexión usando `apiFetch()`.
+
+- Se ajustaron rutas protegidas del frontend:
+  - `/admin`
+  - `/users`
+  - `/servicios`
+  - `/productos`
+  - `/worker`
+  - `/client`
+
+- Se agregaron links en el navbar para gestión administrativa.
+- Se usaron DTOs con validaciones para crear y actualizar servicios/product

@@ -32,7 +32,9 @@ export function UserManagementPage() {
     useState('');
 
   const [role, setRole] =
-    useState(ROLES.CLIENT);
+    useState<string>(
+      ROLES.CLIENT,
+    );
   
   const auth =
     useAuth();
@@ -98,7 +100,9 @@ export function UserManagementPage() {
       setName('');
       setEmail('');
       setPassword('');
-      setRole('CLIENT');
+      setRole(
+        ROLES.CLIENT,
+      );
 
     } catch (err: any) {
       setError(
@@ -281,6 +285,16 @@ export function UserManagementPage() {
                   >
                     Guardar
                   </button>
+
+                  <button
+                    onClick={() =>
+                      handleDelete(
+                        user.id,
+                      )
+                    }
+                  >
+                    Eliminar
+                  </button>
                 </>
               ) : (
                 user.role
@@ -338,15 +352,15 @@ export function UserManagementPage() {
             )
           }
         >
-          <option value="CLIENT">
+          <option value={ROLES.CLIENT}>
             Cliente
           </option>
 
-          <option value="WORKER">
+          <option value={ROLES.WORKER}>
             Trabajador/a
           </option>
 
-          <option value="ADMIN">
+          <option value={ROLES.ADMIN}>
             Administrador/a
           </option>
         </select>

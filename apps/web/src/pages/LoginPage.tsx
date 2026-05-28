@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { login, getMe, } from '../services/auth.service';
 import { setAuth, } from '../store/auth.store';
+import { ROLES } from '../constants/roles';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export function LoginPage() {
         user.role;
 
       if (
-        role === 'CLIENT'
+        role === ROLES.CLIENT
       ) {
         navigate(
           '/client',
@@ -45,7 +46,7 @@ export function LoginPage() {
       }
 
       if (
-        role === 'WORKER'
+        role === ROLES.WORKER
       ) {
         navigate(
           '/worker',
