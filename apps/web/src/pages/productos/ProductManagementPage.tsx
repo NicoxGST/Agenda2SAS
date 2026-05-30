@@ -32,13 +32,9 @@ function getErrorMessage(error: unknown) {
 
 export function ProductManagementPage() {
   const [products, setProducts] = useState<Product[]>([]);
-
   const [form, setForm] = useState<FormState>(emptyForm);
-
   const [editingId, setEditingId] = useState<number | null>(null);
-
   const [error, setError] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -160,74 +156,155 @@ export function ProductManagementPage() {
   }
 
   return (
-    <div>
-      <h1>Productos</h1>
+    <>
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Inventario</p>
+          <h1>Productos</h1>
+          <p className="page-copy">
+            Crea y administra productos, precios, stock y disponibilidad.
+          </p>
+        </div>
+      </header>
 
-      <div>
-        <input
-          placeholder="nombre"
-          value={form.name}
-          onChange={(e) => updateForm("name", e.target.value)}
-        />
+      <section className="panel">
+        <div className="panel-header">
+          <h2>{editingId ? "Editar producto" : "Nuevo producto"}</h2>
+        </div>
 
-        <input
-          placeholder="descripcion"
-          value={form.description}
-          onChange={(e) => updateForm("description", e.target.value)}
-        />
+        <div className="panel-body">
+          <div className="form-grid">
+            <label className="field">
+              <span>Nombre</span>
+              <input
+                placeholder="Ej: Tarjeta Gráfica"
+                value={form.name}
+                onChange={(e) => updateForm("name", e.target.value)}
+              />
+            </label>
 
-        <input
-          type="number"
-          min="1"
-          placeholder="precio"
-          value={form.price}
-          onChange={(e) => updateForm("price", e.target.value)}
-        />
+            <label className="field">
+              <span>Descripcion</span>
+              <input
+                placeholder="Detalle"
+                value={form.description}
+                onChange={(e) => updateForm("description", e.target.value)}
+              />
+            </label>
 
-        <input
-          type="number"
-          min="0"
-          placeholder="stock"
-          value={form.stock}
-          onChange={(e) => updateForm("stock", e.target.value)}
-        />
+            <label className="field">
+              <span>Precio</span>
+              <input
+                min="1"
+                placeholder="12990"
+                type="number"
+                value={form.price}
+                onChange={(e) => updateForm("price", e.target.value)}
+              />
+            </label>
 
-        <button onClick={handleSubmit} disabled={loading}>
-          {editingId ? "Guardar" : "+ Crear Producto"}
-        </button>
+            <label className="field">
+              <span>Stock</span>
+              <input
+                min="0"
+                placeholder="10"
+                type="number"
+                value={form.stock}
+                onChange={(e) => updateForm("stock", e.target.value)}
+              />
+            </label>
+          </div>
 
-        {editingId && (
-          <button onClick={resetForm} disabled={loading}>
-            Cancelar
-          </button>
-        )}
-      </div>
-
-      {error && <p>{error}</p>}
-
-      <div>
-        {products.map((product) => (
-          <div key={product.id}>
-            <h2>{product.name}</h2>
-
-            <p>{product.description}</p>
-
-            <p>Precio: ${product.price}</p>
-
-            <p>Stock: {product.stock}</p>
-
-            <p>{product.isActive ? "Activo" : "Inactivo"}</p>
-
-            <button onClick={() => startEditing(product)}>Editar</button>
-
-            <button onClick={() => handleToggle(product)}>
-              {product.isActive ? "Desactivar" : "Activar"}
+          <div className="actions section">
+            <button
+              className="button button-primary"
+              disabled={loading}
+              onClick={handleSubmit}
+              type="button"
+            >
+              {editingId ? "Guardar cambios" : "Crear producto"}
             </button>
 
-            <button onClick={() => handleDelete(product.id)}>Eliminar</button>
+            {editingId && (
+              <button
+                className="button button-ghost"
+                disabled={loading}
+                onClick={resetForm}
+                type="button"
+              >
+                Cancelar
+              </button>
+            )}
           </div>
-        ))}
-      </div>
-    </div>
+
+          {error && <p className="alert alert-error">{error}</p>}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="page-header">
+          <div>
+            <h2>Listado</h2>
+            <p className="page-copy">
+              {products.length} producto{products.length === 1 ? "" : "s"} en el
+              catalogo.
+            </p>
+          </div>
+        </div>
+
+        <div className="list">
+          {products.length === 0 && (
+            <div className="empty-state">No hay productos registrados.</div>
+          )}
+
+          {products.map((product) => (
+            <article className="item-row" key={product.id}>
+              <div className="item-main">
+                <h3 className="item-title">{product.name}</h3>
+                <p className="item-description">{product.description}</p>
+              </div>
+
+              <div className="item-metrics">
+                <span className="pill pill-blue">${product.price}</span>
+                <span className="pill pill-orange">Stock {product.stock}</span>
+                <span
+                  className={
+                    product.isActive ? "pill pill-success" : "pill pill-muted"
+                  }
+                >
+                  {product.isActive ? "Activo" : "Inactivo"}
+                </span>
+              </div>
+
+              <div className="actions">
+                <button
+                  className="button button-secondary"
+                  onClick={() => startEditing(product)}
+                  type="button"
+                >
+                  Editar
+                </button>
+
+                <button
+                  className="button button-warning"
+                  onClick={() => handleToggle(product)}
+                  type="button"
+                >
+                  {product.isActive ? "Desactivar" : "Activar"}
+                </button>
+
+                <button
+                  className="button button-danger"
+                  onClick={() => handleDelete(product.id)}
+                  type="button"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }

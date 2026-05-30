@@ -4,10 +4,12 @@ import { Navbar } from '../components/layout/Navbar';
 
 export function MainLayout() {
   return (
-    <>
+    <div className="app-shell">
       <Navbar />
 
-      <Outlet />
-    </>
+      <main className="page">
+        <Outlet />
+      </main>
+    </div>
   );
 }

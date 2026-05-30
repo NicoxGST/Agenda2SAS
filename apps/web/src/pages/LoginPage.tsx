@@ -1,99 +1,96 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-import { login, getMe, } from '../services/auth.service';
-import { setAuth, } from '../store/auth.store';
-import { ROLES } from '../constants/roles';
+import { ROLES } from "../constants/roles";
+import { login, getMe } from "../services/auth.service";
+import { setAuth } from "../store/auth.store";
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Ocurrio un error";
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   async function handleLogin() {
     try {
-      setError('');
+      setError("");
 
-      const data = await login(
-        email,
-        password,
-      );
+      const data = await login(email, password);
 
-      const user =
-        await getMe(
-          data.accessToken,
-        );
+      const user = await getMe(data.accessToken);
 
-      setAuth(
-        data.accessToken,
-        data.refreshToken,
-        user,
-      );
+      setAuth(data.accessToken, data.refreshToken, user);
 
-      const role =
-        user.role;
+      const role = user.role;
 
-      if (
-        role === ROLES.CLIENT
-      ) {
-        navigate(
-          '/client',
-        );
-
+      if (role === ROLES.CLIENT) {
+        navigate("/client");
         return;
       }
 
-      if (
-        role === ROLES.WORKER
-      ) {
-        navigate(
-          '/worker',
-        );
-
+      if (role === ROLES.WORKER) {
+        navigate("/worker");
         return;
       }
 
-      navigate(
-        '/admin',
-      );
-    } catch (err: any) {
-      setError(err.message);
+      navigate("/admin");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     }
   }
 
   return (
-    <div>
-      <h1>Login</h1>
+    <section className="auth-wrap">
+      <div className="panel auth-card">
+        <div className="panel-body">
+          <div>
+            <p className="eyebrow">Acceso seguro</p>
+            <h1>Login</h1>
+            <p className="page-copy">
+              Ingresa con tu cuenta para acceder al panel segun tu rol.
+            </p>
+          </div>
 
-      <input
-        type="email"
-        value={email}
-        onChange={(e) =>
-          setEmail(
-            e.target.value,
-          )
-        }
-      />
+          <label className="field">
+            <span>Email</span>
+            <input
+              autoComplete="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
 
-      <input
-        type="password"
-        value={password}
-        onChange={(e) =>
-          setPassword(
-            e.target.value,
-          )
-        }
-      />
+          <label className="field">
+            <span>Password</span>
+            <input
+              autoComplete="current-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
 
-      <button
-        onClick={handleLogin}
-      >
-        Entrar
-      </button>
+          <button className="button button-primary" onClick={handleLogin}>
+            Entrar
+          </button>
 
-      {error && <p>{error}</p>}
-    </div>
+          <Link className="button button-ghost" to="/register">
+            Crear cuenta
+          </Link>
+
+          {error && <p className="alert alert-error">{error}</p>}
+        </div>
+      </div>
+    </section>
   );
 }

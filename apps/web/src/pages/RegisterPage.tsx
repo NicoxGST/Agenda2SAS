@@ -1,109 +1,92 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-import {
-  register,
-} from '../services/auth.service';
+import { register } from "../services/auth.service";
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Ocurrio un error";
+}
 
 export function RegisterPage() {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
-  const [name, setName] =
-    useState('');
-
-  const [email, setEmail] =
-    useState('');
-
-  const [password, setPassword] =
-    useState('');
-
-  const [error, setError] =
-    useState('');
-
-  const [success, setSuccess] =
-    useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function handleRegister() {
     try {
-      setError('');
-      setSuccess('');
+      setError("");
+      setSuccess("");
 
-      await register(
-        name,
-        email,
-        password,
-      );
+      await register(name, email, password);
 
-      setSuccess(
-        'Usuario creado',
-      );
+      setSuccess("Usuario creado");
 
       setTimeout(() => {
-        navigate(
-          '/login',
-        );
+        navigate("/login");
       }, 1000);
-
-    } catch (err: any) {
-      setError(
-        err.message,
-      );
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     }
   }
 
   return (
-    <div>
-      <h1>
-        Registro
-      </h1>
+    <section className="auth-wrap">
+      <div className="panel auth-card">
+        <div className="panel-body">
+          <div>
+            <p className="eyebrow">Nueva cuenta</p>
+            <h1>Registro</h1>
+            <p className="page-copy">
+              Crea una cuenta cliente. Los permisos administrativos se gestionan
+              desde usuarios.
+            </p>
+          </div>
 
-      <input
-        placeholder="nombre"
-        value={name}
-        onChange={(e) =>
-          setName(
-            e.target.value,
-          )
-        }
-      />
+          <label className="field">
+            <span>Nombre</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
 
-      <input
-        placeholder="email"
-        value={email}
-        onChange={(e) =>
-          setEmail(
-            e.target.value,
-          )
-        }
-      />
+          <label className="field">
+            <span>Email</span>
+            <input
+              autoComplete="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
 
-      <input
-        type="password"
-        placeholder="password"
-        value={password}
-        onChange={(e) =>
-          setPassword(
-            e.target.value,
-          )
-        }
-      />
+          <label className="field">
+            <span>Password</span>
+            <input
+              autoComplete="new-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
 
-      <button
-        onClick={
-          handleRegister
-        }
-      >
-        Crear cuenta
-      </button>
+          <button className="button button-primary" onClick={handleRegister}>
+            Crear cuenta
+          </button>
 
-      {error && (
-        <p>{error}</p>
-      )}
+          <Link className="button button-ghost" to="/login">
+            Ya tengo cuenta
+          </Link>
 
-      {success && (
-        <p>{success}</p>
-      )}
-    </div>
+          {error && <p className="alert alert-error">{error}</p>}
+          {success && <p className="alert alert-success">{success}</p>}
+        </div>
+      </div>
+    </section>
   );
 }
