@@ -510,6 +510,12 @@ h3 {
   gap: 8px;
 }
 
+.slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;

@@ -7,24 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  SUPER_ADMIN
-  ADMIN
-  WORKER
-  CLIENT
-}
-
 model User {
   id           Int      @id @default(autoincrement())
-  name         String
   email        String   @unique
+  name         String
+  createdAt    DateTime @default(now())
   password     String
   role         Role
-
+  updatedAt    DateTime @updatedAt
   refreshToken String?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  workerAvailabilities WorkerAvailability[] @relation("WorkerAvailabilityWorker")
+  clientReservations    Reservation[]       @relation("ReservationClient")
+  workerReservations    Reservation[]       @relation("ReservationWorker")
 }
 
 model Service {
@@ -33,9 +28,10 @@ model Service {
   description String
   price       Int
   isActive    Boolean  @default(true)
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  reservations Reservation[]
 }
 
 model Product {
@@ -44,8 +40,59 @@ model Product {
   description String
   price       Int
   stock       Int
-  isActive    Boolean @default(true)
-
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model WorkerAvailability {
+  id          Int      @id @default(autoincrement())
+  workerId    Int
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  slotMinutes Int      @default(60)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  worker User @relation("WorkerAvailabilityWorker", fields: [workerId], references: [id])
+
+  @@index([workerId, dayOfWeek])
+}
+
+model Reservation {
+  id            Int               @id @default(autoincrement())
+  clientId      Int
+  workerId      Int
+  serviceId     Int
+  scheduledAt   DateTime
+  clientNotes   String?
+  contactPhone  String
+  depositAmount Int               @default(0)
+  status        ReservationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  client  User    @relation("ReservationClient", fields: [clientId], references: [id])
+  worker  User    @relation("ReservationWorker", fields: [workerId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@unique([workerId, scheduledAt])
+  @@index([clientId, scheduledAt])
+}
+
+enum Role {
+  ADMIN
+  WORKER
+  CLIENT
+  SUPER_ADMIN
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  ATTENDED
+  CANCELLED
+  NO_SHOW
 }

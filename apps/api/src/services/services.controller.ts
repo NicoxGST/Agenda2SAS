@@ -20,22 +20,31 @@ import { UpdateServiceDto } from './dto/update-service.dto';
 import { ServicesService } from './services.service';
 
 @Controller('services')
-@UseGuards(
-  JwtAuthGuard,
-  RolesGuard,
-)
 export class ServicesController {
   constructor(
     private readonly servicesService: ServicesService,
   ) {}
 
+  @Get('public')
+  findPublicActive() {
+    return this.servicesService.findPublicActive();
+  }
+
   @Get()
+  @UseGuards(
+    JwtAuthGuard,
+    RolesGuard,
+  )
   @Roles(Role.ADMIN)
   findAll() {
     return this.servicesService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(
+    JwtAuthGuard,
+    RolesGuard,
+  )
   @Roles(Role.ADMIN)
   findOne(
     @Param('id', ParseIntPipe)
@@ -45,6 +54,10 @@ export class ServicesController {
   }
 
   @Post()
+  @UseGuards(
+    JwtAuthGuard,
+    RolesGuard,
+  )
   @Roles(Role.ADMIN)
   create(
     @Body()
@@ -54,6 +67,10 @@ export class ServicesController {
   }
 
   @Patch(':id')
+  @UseGuards(
+    JwtAuthGuard,
+    RolesGuard,
+  )
   @Roles(Role.ADMIN)
   update(
     @Param('id', ParseIntPipe)
@@ -66,6 +83,10 @@ export class ServicesController {
   }
 
   @Delete(':id')
+  @UseGuards(
+    JwtAuthGuard,
+    RolesGuard,
+  )
   @Roles(Role.ADMIN)
   remove(
     @Param('id', ParseIntPipe)

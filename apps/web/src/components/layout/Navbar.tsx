@@ -45,6 +45,11 @@ const roleMenus: Record<string, MenuItem[]> = {
       to: "/productos",
       label: "Productos",
     },
+
+    {
+      to: "/worker",
+      label: "Agenda",
+    },
   ],
 
   [ROLES.SUPER_ADMIN]: [
@@ -66,6 +71,11 @@ const roleMenus: Record<string, MenuItem[]> = {
     {
       to: "/productos",
       label: "Productos",
+    },
+
+    {
+      to: "/worker",
+      label: "Agenda",
     },
   ],
 };

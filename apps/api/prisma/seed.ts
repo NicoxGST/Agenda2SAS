@@ -30,6 +30,37 @@ async function main() {
     skipDuplicates: true,
   });
 
+  await prisma.service.createMany({
+    data: [
+      {
+        name: 'Diagnostico',
+        description: 'Revision inicial del equipo y orientacion del problema.',
+        price: 10000,
+      },
+      {
+        name: 'Formateo',
+        description: 'Instalacion limpia de sistema operativo y configuracion base.',
+        price: 25000,
+      },
+      {
+        name: 'Limpieza',
+        description: 'Limpieza interna preventiva para equipos de escritorio o notebook.',
+        price: 18000,
+      },
+      {
+        name: 'Cambio de pantalla',
+        description: 'Evaluacion y reemplazo de pantalla compatible.',
+        price: 35000,
+      },
+      {
+        name: 'Cambio de bateria',
+        description: 'Evaluacion y reemplazo de bateria compatible.',
+        price: 30000,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
   console.log('Seed completado');
 }
 
