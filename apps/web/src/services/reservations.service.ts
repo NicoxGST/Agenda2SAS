@@ -10,6 +10,17 @@ export type ReservationStatus =
   | "CANCELLED"
   | "NO_SHOW";
 
+export const RESERVATION_STATUS_LABELS: Record<
+  ReservationStatus,
+  string
+> = {
+  PENDING: "PENDIENTE",
+  CONFIRMED: "CONFIRMADA",
+  ATTENDED: "ATENDIDA",
+  CANCELLED: "CANCELADA",
+  NO_SHOW: "NO ASISTIÓ",
+};
+
 export type Reservation = {
   id: number;
   clientId: number;

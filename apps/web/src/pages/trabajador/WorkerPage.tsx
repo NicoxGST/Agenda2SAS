@@ -33,6 +33,9 @@ import {
   updateWorkOrderStatus,
   WORK_ORDER_STATUS_LABELS,
 } from "../../services/work-orders.service";
+import {
+  RESERVATION_STATUS_LABELS,
+} from "../../services/reservations.service";
 import { ROLES } from "../../constants/roles";
 import { useAuth } from "../../store/auth.store";
 
@@ -612,21 +615,21 @@ export function WorkerPage() {
                 </div>
 
                 <div className="item-metrics">
-                  <span className="pill pill-blue">{reservation.status}</span>
+                  <span className="pill pill-blue">{RESERVATION_STATUS_LABELS[reservation.status]}</span>
                   <span className="pill pill-muted">{reservation.contactPhone}</span>
                 </div>
 
                 <div className="actions">
                   {nextStatuses.map((status) => (
-                    <button
-                      className="button button-secondary"
-                      key={status}
-                      onClick={() => handleStatus(reservation.id, status)}
-                      type="button"
-                    >
-                      {status}
-                    </button>
-                  ))}
+                  <button
+                    className="button button-secondary"
+                    key={status}
+                    onClick={() => handleStatus(reservation.id, status)}
+                    type="button"
+                  >
+                    {RESERVATION_STATUS_LABELS[status]}
+                  </button>
+                ))}
                 </div>
               </article>
             ))}
