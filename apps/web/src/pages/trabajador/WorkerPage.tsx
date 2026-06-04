@@ -16,6 +16,23 @@ import {
   getWorkerReservations,
   updateReservationStatus,
 } from "../../services/reservations.service";
+import type { ClientSummary, Device } from "../../services/devices.service";
+import {
+  createDevice,
+  getDevices,
+  searchClients,
+  updateDevice,
+} from "../../services/devices.service";
+import type {
+  WorkOrder,
+  WorkOrderStatus,
+} from "../../services/work-orders.service";
+import {
+  createWorkOrder,
+  getWorkOrders,
+  updateWorkOrderStatus,
+  WORK_ORDER_STATUS_LABELS,
+} from "../../services/work-orders.service";
 import { ROLES } from "../../constants/roles";
 import { useAuth } from "../../store/auth.store";
 
@@ -52,6 +69,52 @@ const nextStatuses: ReservationStatus[] = [
   "NO_SHOW",
 ];
 
+const workOrderStatuses: WorkOrderStatus[] = [
+  "RECEIVED",
+  "DIAGNOSIS",
+  "WAITING_PARTS",
+  "IN_REPAIR",
+  "READY",
+  "DELIVERED",
+  "CANCELLED",
+];
+
+type DeviceFormState = {
+  clientId: string;
+  brand: string;
+  model: string;
+  serialNumber: string;
+  deviceType: string;
+  description: string;
+};
+
+const emptyDeviceForm: DeviceFormState = {
+  clientId: "",
+  brand: "",
+  model: "",
+  serialNumber: "",
+  deviceType: "",
+  description: "",
+};
+
+type WorkOrderFormState = {
+  deviceId: string;
+  workerId: string;
+  reservationId: string;
+  problemDescription: string;
+  diagnosis: string;
+  laborCost: string;
+};
+
+const emptyWorkOrderForm: WorkOrderFormState = {
+  deviceId: "",
+  workerId: "",
+  reservationId: "",
+  problemDescription: "",
+  diagnosis: "",
+  laborCost: "0",
+};
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -73,10 +136,18 @@ export function WorkerPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [availability, setAvailability] = useState<WorkerAvailability[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [clients, setClients] = useState<ClientSummary[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [form, setForm] = useState<FormState>(() => ({
     ...emptyForm,
     workerId: isWorker && user ? String(user.id) : "",
   }));
+  const [deviceForm, setDeviceForm] = useState<DeviceFormState>(emptyDeviceForm);
+  const [workOrderForm, setWorkOrderForm] =
+    useState<WorkOrderFormState>(emptyWorkOrderForm);
+  const [clientSearch, setClientSearch] = useState("");
+  const [editingDeviceId, setEditingDeviceId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -98,8 +169,15 @@ export function WorkerPage() {
             canPickWorker ? getWorkers() : Promise.resolve([]),
           ]);
 
+        const [deviceData, workOrderData] = await Promise.all([
+          getDevices(),
+          getWorkOrders(),
+        ]);
+
         if (!ignore) {
           setAvailability(availabilityData);
+          setDevices(deviceData);
+          setWorkOrders(workOrderData);
 
           if (isWorker) {
             setReservations(reservationData);
@@ -153,6 +231,20 @@ export function WorkerPage() {
 
   function updateForm(key: keyof FormState, value: string) {
     setForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  function updateDeviceForm(key: keyof DeviceFormState, value: string) {
+    setDeviceForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  function updateWorkOrderForm(key: keyof WorkOrderFormState, value: string) {
+    setWorkOrderForm((prev) => ({
       ...prev,
       [key]: value,
     }));
@@ -229,6 +321,124 @@ export function WorkerPage() {
 
       setReservations((prev) =>
         prev.map((reservation) => (reservation.id === id ? updated : reservation)),
+      );
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    }
+  }
+
+  async function handleSearchClients() {
+    try {
+      setError("");
+
+      const data = await searchClients(clientSearch.trim());
+
+      setClients(data);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    }
+  }
+
+  function startEditingDevice(device: Device) {
+    setEditingDeviceId(device.id);
+    setDeviceForm({
+      clientId: String(device.clientId),
+      brand: device.brand,
+      model: device.model,
+      serialNumber: device.serialNumber ?? "",
+      deviceType: device.deviceType,
+      description: device.description,
+    });
+  }
+
+  function resetDeviceForm() {
+    setEditingDeviceId(null);
+    setDeviceForm(emptyDeviceForm);
+  }
+
+  async function handleSaveDevice() {
+    try {
+      setError("");
+      setLoading(true);
+
+      const payload = {
+        clientId: Number(deviceForm.clientId),
+        brand: deviceForm.brand.trim(),
+        model: deviceForm.model.trim(),
+        serialNumber: deviceForm.serialNumber.trim() || undefined,
+        deviceType: deviceForm.deviceType.trim(),
+        description: deviceForm.description.trim(),
+      };
+
+      if (
+        !payload.clientId ||
+        !payload.brand ||
+        !payload.model ||
+        !payload.deviceType ||
+        !payload.description
+      ) {
+        throw new Error("Completa los datos del equipo");
+      }
+
+      if (editingDeviceId) {
+        const updated = await updateDevice(editingDeviceId, payload);
+
+        setDevices((prev) =>
+          prev.map((device) => (device.id === editingDeviceId ? updated : device)),
+        );
+      } else {
+        const created = await createDevice(payload);
+
+        setDevices((prev) => [created, ...prev]);
+      }
+
+      resetDeviceForm();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateWorkOrder() {
+    try {
+      setError("");
+      setLoading(true);
+
+      const payload = {
+        deviceId: Number(workOrderForm.deviceId),
+        workerId: workOrderForm.workerId ? Number(workOrderForm.workerId) : undefined,
+        reservationId: workOrderForm.reservationId
+          ? Number(workOrderForm.reservationId)
+          : undefined,
+        problemDescription: workOrderForm.problemDescription.trim(),
+        diagnosis: workOrderForm.diagnosis.trim() || undefined,
+        laborCost: Number(workOrderForm.laborCost),
+      };
+
+      if (!payload.deviceId || !payload.problemDescription || payload.laborCost < 0) {
+        throw new Error("Completa los datos de la orden");
+      }
+
+      const created = await createWorkOrder(payload);
+
+      setWorkOrders((prev) => [created, ...prev]);
+      setWorkOrderForm(emptyWorkOrderForm);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleWorkOrderStatus(id: number, status: WorkOrderStatus) {
+    try {
+      setError("");
+
+      const updated = await updateWorkOrderStatus(id, status);
+
+      setWorkOrders((prev) =>
+        prev.map((workOrder) => (workOrder.id === id ? updated : workOrder)),
       );
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -423,6 +633,338 @@ export function WorkerPage() {
           </div>
         </section>
       )}
+
+      <section className="section">
+        <div className="page-header">
+          <div>
+            <h2>Equipos</h2>
+            <p className="page-copy">
+              Busca un cliente, registra equipos y mantiene sus datos de ingreso.
+            </p>
+          </div>
+        </div>
+
+        <section className="panel">
+          <div className="panel-header">
+            <h2>Buscar cliente</h2>
+          </div>
+
+          <div className="panel-body">
+            <div className="form-grid">
+              <label className="field">
+                <span>Nombre o email</span>
+                <input
+                  placeholder="client@test.com"
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="actions section">
+              <button
+                className="button button-secondary"
+                onClick={handleSearchClients}
+                type="button"
+              >
+                Buscar cliente
+              </button>
+            </div>
+
+            <div className="slot-grid section">
+              {clients.map((client) => (
+                <button
+                  className={
+                    deviceForm.clientId === String(client.id)
+                      ? "button button-primary"
+                      : "button button-secondary"
+                  }
+                  key={client.id}
+                  onClick={() => updateDeviceForm("clientId", String(client.id))}
+                  type="button"
+                >
+                  {client.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="panel section">
+          <div className="panel-header">
+            <h2>{editingDeviceId ? "Editar equipo" : "Nuevo equipo"}</h2>
+          </div>
+
+          <div className="panel-body">
+            <div className="form-grid">
+              <label className="field">
+                <span>Cliente ID</span>
+                <input
+                  min="1"
+                  type="number"
+                  value={deviceForm.clientId}
+                  onChange={(e) => updateDeviceForm("clientId", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Marca</span>
+                <input
+                  placeholder="HP"
+                  value={deviceForm.brand}
+                  onChange={(e) => updateDeviceForm("brand", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Modelo</span>
+                <input
+                  placeholder="Pavilion"
+                  value={deviceForm.model}
+                  onChange={(e) => updateDeviceForm("model", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Serie</span>
+                <input
+                  placeholder="Opcional"
+                  value={deviceForm.serialNumber}
+                  onChange={(e) => updateDeviceForm("serialNumber", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Tipo</span>
+                <input
+                  placeholder="Notebook"
+                  value={deviceForm.deviceType}
+                  onChange={(e) => updateDeviceForm("deviceType", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Descripcion</span>
+                <input
+                  placeholder="Estado al ingreso"
+                  value={deviceForm.description}
+                  onChange={(e) => updateDeviceForm("description", e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="actions section">
+              <button
+                className="button button-primary"
+                disabled={loading}
+                onClick={handleSaveDevice}
+                type="button"
+              >
+                {editingDeviceId ? "Guardar equipo" : "Crear equipo"}
+              </button>
+
+              {editingDeviceId && (
+                <button
+                  className="button button-ghost"
+                  disabled={loading}
+                  onClick={resetDeviceForm}
+                  type="button"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <div className="list section">
+          {devices.length === 0 && (
+            <div className="empty-state">No hay equipos registrados.</div>
+          )}
+
+          {devices.map((device) => (
+            <article className="item-row" key={device.id}>
+              <div className="item-main">
+                <h3 className="item-title">
+                  {device.brand} {device.model}
+                </h3>
+                <p className="item-description">
+                  Cliente: {device.client?.name ?? device.clientId} -{" "}
+                  {device.deviceType}
+                </p>
+                <p className="item-meta">{device.description}</p>
+              </div>
+
+              <div className="item-metrics">
+                <span className="pill pill-muted">ID {device.id}</span>
+                {device.serialNumber && (
+                  <span className="pill pill-blue">{device.serialNumber}</span>
+                )}
+              </div>
+
+              <div className="actions">
+                <button
+                  className="button button-secondary"
+                  onClick={() => startEditingDevice(device)}
+                  type="button"
+                >
+                  Editar
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="page-header">
+          <div>
+            <h2>Ordenes de trabajo</h2>
+            <p className="page-copy">
+              Crea una orden desde un equipo y actualiza su estado de reparacion.
+            </p>
+          </div>
+        </div>
+
+        <section className="panel">
+          <div className="panel-header">
+            <h2>Nueva orden</h2>
+          </div>
+
+          <div className="panel-body">
+            <div className="form-grid">
+              <label className="field">
+                <span>Equipo</span>
+                <select
+                  value={workOrderForm.deviceId}
+                  onChange={(e) => updateWorkOrderForm("deviceId", e.target.value)}
+                >
+                  <option value="">Seleccionar</option>
+                  {devices.map((device) => (
+                    <option key={device.id} value={device.id}>
+                      #{device.id} {device.brand} {device.model}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {canPickWorker && (
+                <label className="field">
+                  <span>Trabajador</span>
+                  <select
+                    value={workOrderForm.workerId}
+                    onChange={(e) =>
+                      updateWorkOrderForm("workerId", e.target.value)
+                    }
+                  >
+                    <option value="">Seleccionar</option>
+                    {workers.map((worker) => (
+                      <option key={worker.id} value={worker.id}>
+                        {worker.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              <label className="field">
+                <span>Reserva ID</span>
+                <input
+                  min="1"
+                  placeholder="Opcional"
+                  type="number"
+                  value={workOrderForm.reservationId}
+                  onChange={(e) =>
+                    updateWorkOrderForm("reservationId", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>Costo mano de obra</span>
+                <input
+                  min="0"
+                  type="number"
+                  value={workOrderForm.laborCost}
+                  onChange={(e) => updateWorkOrderForm("laborCost", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Problema</span>
+                <input
+                  placeholder="No enciende"
+                  value={workOrderForm.problemDescription}
+                  onChange={(e) =>
+                    updateWorkOrderForm("problemDescription", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>Diagnostico</span>
+                <input
+                  placeholder="Opcional"
+                  value={workOrderForm.diagnosis}
+                  onChange={(e) => updateWorkOrderForm("diagnosis", e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="actions section">
+              <button
+                className="button button-primary"
+                disabled={loading}
+                onClick={handleCreateWorkOrder}
+                type="button"
+              >
+                Crear orden
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div className="list section">
+          {workOrders.length === 0 && (
+            <div className="empty-state">No hay ordenes de trabajo.</div>
+          )}
+
+          {workOrders.map((workOrder) => (
+            <article className="item-row item-row-wide" key={workOrder.id}>
+              <div className="item-main">
+                <h3 className="item-title">Orden #{workOrder.id}</h3>
+                <p className="item-description">
+                  {workOrder.device?.brand} {workOrder.device?.model} -{" "}
+                  {workOrder.problemDescription}
+                </p>
+                {workOrder.diagnosis && (
+                  <p className="item-meta">Diagnostico: {workOrder.diagnosis}</p>
+                )}
+              </div>
+
+              <div className="item-metrics">
+                <span className="pill pill-blue">
+                  {WORK_ORDER_STATUS_LABELS[workOrder.status]}
+                </span>
+                <span className="pill pill-muted">${workOrder.laborCost}</span>
+              </div>
+
+              <div className="actions">
+                {workOrderStatuses.map((status) => (
+                  <button
+                    className="button button-secondary"
+                    key={status}
+                    onClick={() => handleWorkOrderStatus(workOrder.id, status)}
+                    type="button"
+                  >
+                    {WORK_ORDER_STATUS_LABELS[status]}
+                  </button>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
     </>
   );
 }

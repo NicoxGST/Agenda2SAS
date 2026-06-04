@@ -452,6 +452,12 @@ h3 {
   border-color: var(--black);
 }
 
+.button-small {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
 .alert {
   margin: 16px 0 0;
   border-radius: var(--radius);
@@ -484,6 +490,10 @@ h3 {
   border-radius: var(--radius);
   padding: 16px;
   background: var(--white);
+}
+
+.item-row-wide {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .item-main {
@@ -553,6 +563,24 @@ h3 {
   color: var(--muted);
   text-align: center;
   background: var(--surface);
+}
+
+.photo-list,
+.work-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.photo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px;
+  background: var(--surface-soft);
 }
 
 .auth-wrap {

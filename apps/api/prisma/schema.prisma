@@ -20,6 +20,8 @@ model User {
   workerAvailabilities WorkerAvailability[] @relation("WorkerAvailabilityWorker")
   clientReservations    Reservation[]       @relation("ReservationClient")
   workerReservations    Reservation[]       @relation("ReservationWorker")
+  devices               Device[]
+  workerWorkOrders      WorkOrder[]         @relation("WorkOrderWorker")
 }
 
 model Service {
@@ -77,9 +79,60 @@ model Reservation {
   client  User    @relation("ReservationClient", fields: [clientId], references: [id])
   worker  User    @relation("ReservationWorker", fields: [workerId], references: [id])
   service Service @relation(fields: [serviceId], references: [id])
+  workOrder WorkOrder?
 
   @@unique([workerId, scheduledAt])
   @@index([clientId, scheduledAt])
+}
+
+model Device {
+  id           Int      @id @default(autoincrement())
+  clientId     Int
+  brand        String
+  model        String
+  serialNumber String?
+  deviceType   String
+  description  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  client     User          @relation(fields: [clientId], references: [id])
+  photos     DevicePhoto[]
+  workOrders WorkOrder[]
+
+  @@index([clientId])
+}
+
+model DevicePhoto {
+  id          Int      @id @default(autoincrement())
+  deviceId    Int
+  url         String
+  description String?
+  createdAt   DateTime @default(now())
+
+  device Device @relation(fields: [deviceId], references: [id])
+
+  @@index([deviceId])
+}
+
+model WorkOrder {
+  id                 Int             @id @default(autoincrement())
+  deviceId           Int
+  workerId           Int
+  reservationId      Int?            @unique
+  problemDescription String
+  diagnosis          String?
+  laborCost          Int             @default(0)
+  status             WorkOrderStatus @default(RECEIVED)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  device      Device       @relation(fields: [deviceId], references: [id])
+  worker      User         @relation("WorkOrderWorker", fields: [workerId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+
+  @@index([deviceId])
+  @@index([workerId])
 }
 
 enum Role {
@@ -95,4 +148,14 @@ enum ReservationStatus {
   ATTENDED
   CANCELLED
   NO_SHOW
+}
+
+enum WorkOrderStatus {
+  RECEIVED
+  DIAGNOSIS
+  WAITING_PARTS
+  IN_REPAIR
+  READY
+  DELIVERED
+  CANCELLED
 }
