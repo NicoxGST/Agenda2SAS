@@ -7,6 +7,10 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ServicesModule } from './services/services.module';
 import { ProductsModule } from './products/products.module';
+import { AvailabilityModule } from './availability/availability.module';
+import { ReservationsModule } from './reservations/reservations.module';
+import { DevicesModule } from './devices/devices.module';
+import { WorkOrdersModule } from './work-orders/work-orders.module';
 
 @Module({
   imports: [
@@ -25,6 +29,14 @@ import { ProductsModule } from './products/products.module';
     ServicesModule,
 
     ProductsModule,
+
+    AvailabilityModule,
+
+    ReservationsModule,
+
+    DevicesModule,
+
+    WorkOrdersModule,
   ],
 
   controllers: [AppController],

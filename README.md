@@ -17,6 +17,22 @@ apps/web
 
 ---
 
+# Levantar Proyecto
+
+```txt
+Backend:
+cd apps/api
+pnpm start:dev
+
+DB:
+cd apps/api
+pnpm prisma studio
+
+Frontend:
+cd apps/web
+pnpm dev
+```
+
 # Stack
 
 ## Backend

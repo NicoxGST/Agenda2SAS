@@ -29,6 +29,10 @@ export function getServices() {
   });
 }
 
+export function getPublicServices() {
+  return apiFetch('/services/public');
+}
+
 export function createService(
   data: ServicePayload,
 ) {

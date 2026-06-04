@@ -20,6 +20,17 @@ export class ServicesService {
     });
   }
 
+  findPublicActive() {
+    return this.prisma.service.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  }
+
   async findOne(id: number) {
     const service = await this.prisma.service.findUnique({
       where: { id },
