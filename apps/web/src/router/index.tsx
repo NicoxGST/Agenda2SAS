@@ -57,22 +57,12 @@ export const router = createBrowserRouter([
 
       {
         path: "servicios",
-
-        element: (
-          <RouteGuard allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
-            <ServiceManagementPage />
-          </RouteGuard>
-        ),
+        element: <ServiceManagementPage />,
       },
 
       {
         path: "productos",
-
-        element: (
-          <RouteGuard allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
-            <ProductManagementPage />
-          </RouteGuard>
-        ),
+        element: <ProductManagementPage />,
       },
 
       {

@@ -20,6 +20,17 @@ export class ProductsService {
     });
   }
 
+  findPublicActive() {
+    return this.prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   async findOne(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },

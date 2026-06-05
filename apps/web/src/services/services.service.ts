@@ -18,6 +18,10 @@ type ServicePayload = {
 function authHeaders() {
   const auth = getAuth();
 
+  if (!auth.accessToken) {
+    return {};
+  }
+
   return {
     Authorization: `Bearer ${auth.accessToken}`,
   };

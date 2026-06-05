@@ -20,6 +20,10 @@ type ProductPayload = {
 function authHeaders() {
   const auth = getAuth();
 
+  if (!auth.accessToken) {
+    return {};
+  }
+
   return {
     Authorization: `Bearer ${auth.accessToken}`,
   };
@@ -29,6 +33,10 @@ export function getProducts() {
   return apiFetch("/products", {
     headers: authHeaders(),
   });
+}
+
+export function getPublicProducts() {
+  return apiFetch("/products/public");
 }
 
 export function createProduct(data: ProductPayload) {

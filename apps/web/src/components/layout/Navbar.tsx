@@ -133,26 +133,36 @@ export function Navbar() {
           <span>Agenda2SAS</span>
         </Link>
 
-        <NavLink className="nav-home-link" to="/" onClick={closeMenu}>
-          Inicio
-        </NavLink>
+        <div className="topbar-links">
+          <NavLink className="nav-home-link" to="/" onClick={closeMenu}>
+            Inicio
+          </NavLink>
 
-        <button
-          aria-expanded={open}
-          aria-label={open ? "Cerrar menu" : "Abrir menu"}
-          className="hamburger-button"
-          onClick={handleMenuToggle}
-          type="button"
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+          <NavLink className="nav-home-link" to="/servicios" onClick={closeMenu}>
+            Servicios
+          </NavLink>
 
-        <nav
-          aria-label="Menu principal"
-          className={`nav-panel ${open ? "is-open" : ""}`}
-        >
+          <NavLink className="nav-home-link" to="/productos" onClick={closeMenu}>
+            Productos
+          </NavLink>
+        </div>
+
+        <div className="topbar-actions">
+          <button
+            aria-label={open ? "Cerrar menu" : "Abrir menu"}
+            className="hamburger-button"
+            onClick={handleMenuToggle}
+            type="button"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <nav
+            aria-label="Menu principal"
+            className={`nav-panel ${open ? "is-open" : ""}`}
+          >
           {user && (
             <div className="nav-user">
               <div className="nav-user-text">
@@ -186,7 +196,8 @@ export function Navbar() {
               </button>
             </div>
           )}
-        </nav>
+          </nav>
+        </div>
       </div>
     </header>
   );
