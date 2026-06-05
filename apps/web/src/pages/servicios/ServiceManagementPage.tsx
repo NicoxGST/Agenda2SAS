@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../store/auth.store";
 
 import type { Service } from "../../services/services.service";
 import {
   createService,
   deleteService,
+  getPublicServices,
   getServices,
   updateService,
 } from "../../services/services.service";
+import { ROLES } from "../../constants/roles";
 
 type FormState = {
   name: string;
@@ -34,6 +37,11 @@ export function ServiceManagementPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const auth = useAuth();
+
+  const isManager =
+    auth.user?.role === ROLES.ADMIN ||
+    auth.user?.role === ROLES.SUPER_ADMIN;
 
   useEffect(() => {
     let ignore = false;
@@ -42,7 +50,9 @@ export function ServiceManagementPage() {
       try {
         setError("");
 
-        const data = await getServices();
+        const data = isManager
+          ? await getServices()
+          : await getPublicServices();
 
         if (!ignore) {
           setServices(data);
@@ -153,81 +163,17 @@ export function ServiceManagementPage() {
           <p className="eyebrow">Catalogo de atencion</p>
           <h1>Servicios</h1>
           <p className="page-copy">
-            Mantiene disponibles los servicios que luego se podran reservar.
+            Lista de servicios registrados con nombre y precio.
           </p>
         </div>
       </header>
-
-      <section className="panel">
-        <div className="panel-header">
-          <h2>{editingId ? "Editar servicio" : "Nuevo servicio"}</h2>
-        </div>
-
-        <div className="panel-body">
-          <div className="form-grid">
-            <label className="field">
-              <span>Nombre</span>
-              <input
-                placeholder="Ej: Diagnostico"
-                value={form.name}
-                onChange={(e) => updateForm("name", e.target.value)}
-              />
-            </label>
-
-            <label className="field">
-              <span>Descripcion</span>
-              <input
-                placeholder="Detalle del servicio"
-                value={form.description}
-                onChange={(e) => updateForm("description", e.target.value)}
-              />
-            </label>
-
-            <label className="field">
-              <span>Precio</span>
-              <input
-                min="1"
-                placeholder="15000"
-                type="number"
-                value={form.price}
-                onChange={(e) => updateForm("price", e.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="actions section">
-            <button
-              className="button button-primary"
-              disabled={loading}
-              onClick={handleSubmit}
-              type="button"
-            >
-              {editingId ? "Guardar cambios" : "Crear servicio"}
-            </button>
-
-            {editingId && (
-              <button
-                className="button button-ghost"
-                disabled={loading}
-                onClick={resetForm}
-                type="button"
-              >
-                Cancelar
-              </button>
-            )}
-          </div>
-
-          {error && <p className="alert alert-error">{error}</p>}
-        </div>
-      </section>
 
       <section className="section">
         <div className="page-header">
           <div>
             <h2>Listado</h2>
             <p className="page-copy">
-              {services.length} servicio{services.length === 1 ? "" : "s"} en
-              el catalogo.
+              {services.length} servicio{services.length === 1 ? "" : "s"} disponibles.
             </p>
           </div>
         </div>
@@ -241,45 +187,12 @@ export function ServiceManagementPage() {
             <article className="item-row" key={service.id}>
               <div className="item-main">
                 <h3 className="item-title">{service.name}</h3>
-                <p className="item-description">{service.description}</p>
               </div>
 
               <div className="item-metrics">
                 <span className="pill pill-blue">${service.price}</span>
-                <span
-                  className={
-                    service.isActive ? "pill pill-success" : "pill pill-muted"
-                  }
-                >
-                  {service.isActive ? "Activo" : "Inactivo"}
-                </span>
               </div>
 
-              <div className="actions">
-                <button
-                  className="button button-secondary"
-                  onClick={() => startEditing(service)}
-                  type="button"
-                >
-                  Editar
-                </button>
-
-                <button
-                  className="button button-warning"
-                  onClick={() => handleToggle(service)}
-                  type="button"
-                >
-                  {service.isActive ? "Desactivar" : "Activar"}
-                </button>
-
-                <button
-                  className="button button-danger"
-                  onClick={() => handleDelete(service.id)}
-                  type="button"
-                >
-                  Eliminar
-                </button>
-              </div>
             </article>
           ))}
         </div>
