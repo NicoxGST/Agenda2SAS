@@ -1,11 +1,13 @@
 import { apiFetch } from "./api";
 import { getAuth } from "../store/auth.store";
+import type { WorkOrderStatus } from "./work-orders.service";
 
 export type ClientSummary = {
   id: number;
   name: string;
   email: string;
   role: string;
+  phone?: string | null;
 };
 
 export type DevicePhoto = {
@@ -18,7 +20,7 @@ export type DevicePhoto = {
 
 export type DeviceWorkOrderSummary = {
   id: number;
-  status: string;
+  status: WorkOrderStatus;
   problemDescription: string;
   diagnosis?: string | null;
   laborCost: number;
@@ -38,6 +40,59 @@ export type Device = {
   client?: ClientSummary;
   photos?: DevicePhoto[];
   workOrders?: DeviceWorkOrderSummary[];
+};
+
+export type DeviceDetailsReservation = {
+  id: number;
+  clientId: number;
+  workerId: number;
+  serviceId: number;
+  scheduledAt: string;
+  clientNotes?: string | null;
+  contactPhone: string;
+  depositAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  worker?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+  service?: {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    isActive: boolean;
+  };
+};
+
+export type DeviceDetailsWorkOrder = {
+  id: number;
+  deviceId: number;
+  workerId: number;
+  reservationId?: number | null;
+  problemDescription: string;
+  diagnosis?: string | null;
+  laborCost: number;
+  status: WorkOrderStatus;
+  createdAt: string;
+  updatedAt: string;
+  worker?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+};
+
+export type DeviceDetailsData = Omit<Device, "workOrders"> & {
+  client: ClientSummary;
+  photos: DevicePhoto[];
+  reservations: DeviceDetailsReservation[];
+  workOrders: DeviceDetailsWorkOrder[];
 };
 
 export type DevicePayload = {
@@ -78,6 +133,12 @@ export function getDevices(clientId?: number) {
 
 export function getDevice(id: number) {
   return apiFetch(`/devices/${id}`, {
+    headers: authHeaders(),
+  });
+}
+
+export function getDeviceDetails(id: number) {
+  return apiFetch(`/devices/${id}/details`, {
     headers: authHeaders(),
   });
 }

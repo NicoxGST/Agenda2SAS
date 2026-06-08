@@ -16,6 +16,7 @@ import {
   deleteDevicePhoto,
   getMyDevices,
 } from "../../services/devices.service";
+import { DeviceDetails } from "../../components/devices/DeviceDetails";
 import { WORK_ORDER_STATUS_LABELS } from "../../services/work-orders.service";
 
 type FormState = {
@@ -87,6 +88,7 @@ export function ClientPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [deviceForm, setDeviceForm] = useState<DeviceFormState>(emptyDeviceForm);
   const [photoForm, setPhotoForm] = useState<PhotoFormState>(emptyPhotoForm);
+  const [expandedDeviceId, setExpandedDeviceId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -318,6 +320,35 @@ export function ClientPage() {
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     }
+  }
+
+  function handleDevicePhotoAdded(
+    deviceId: number,
+    photo: NonNullable<Device["photos"]>[number],
+  ) {
+    setDevices((prev) =>
+      prev.map((device) =>
+        device.id === deviceId
+          ? {
+              ...device,
+              photos: [photo, ...(device.photos ?? [])],
+            }
+          : device,
+      ),
+    );
+  }
+
+  function handleDevicePhotoDeleted(deviceId: number, photoId: number) {
+    setDevices((prev) =>
+      prev.map((device) =>
+        device.id === deviceId
+          ? {
+              ...device,
+              photos: (device.photos ?? []).filter((photo) => photo.id !== photoId),
+            }
+          : device,
+      ),
+    );
   }
 
   return (
@@ -662,6 +693,28 @@ export function ClientPage() {
                     </p>
                   ))}
                 </div>
+
+                <div className="actions section">
+                  <button
+                    className="button button-primary"
+                    onClick={() =>
+                      setExpandedDeviceId((current) =>
+                        current === device.id ? null : device.id,
+                      )
+                    }
+                    type="button"
+                  >
+                    {expandedDeviceId === device.id ? "Contraer" : "Ver detalles"}
+                  </button>
+                </div>
+
+                {expandedDeviceId === device.id && (
+                  <DeviceDetails
+                    deviceId={device.id}
+                    onPhotoAdded={handleDevicePhotoAdded}
+                    onPhotoDeleted={handleDevicePhotoDeleted}
+                  />
+                )}
               </div>
             </article>
           ))}

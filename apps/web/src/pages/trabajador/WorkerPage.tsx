@@ -37,6 +37,7 @@ import {
   RESERVATION_STATUS_LABELS,
 } from "../../services/reservations.service";
 import { ROLES } from "../../constants/roles";
+import { DeviceDetails } from "../../components/devices/DeviceDetails";
 import { useAuth } from "../../store/auth.store";
 
 type FormState = {
@@ -130,6 +131,14 @@ function formatDateTime(value: string) {
   return `${value.slice(0, 10)} ${value.slice(11, 16)}`;
 }
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export function WorkerPage() {
   const auth = useAuth();
   const user = auth.user;
@@ -151,6 +160,7 @@ export function WorkerPage() {
     useState<WorkOrderFormState>(emptyWorkOrderForm);
   const [clientSearch, setClientSearch] = useState("");
   const [editingDeviceId, setEditingDeviceId] = useState<number | null>(null);
+  const [expandedDeviceId, setExpandedDeviceId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -359,6 +369,35 @@ export function WorkerPage() {
     setDeviceForm(emptyDeviceForm);
   }
 
+  function handleDevicePhotoAdded(
+    deviceId: number,
+    photo: NonNullable<Device["photos"]>[number],
+  ) {
+    setDevices((prev) =>
+      prev.map((device) =>
+        device.id === deviceId
+          ? {
+              ...device,
+              photos: [photo, ...(device.photos ?? [])],
+            }
+          : device,
+      ),
+    );
+  }
+
+  function handleDevicePhotoDeleted(deviceId: number, photoId: number) {
+    setDevices((prev) =>
+      prev.map((device) =>
+        device.id === deviceId
+          ? {
+              ...device,
+              photos: (device.photos ?? []).filter((photo) => photo.id !== photoId),
+            }
+          : device,
+      ),
+    );
+  }
+
   async function handleSaveDevice() {
     try {
       setError("");
@@ -426,6 +465,26 @@ export function WorkerPage() {
       const created = await createWorkOrder(payload);
 
       setWorkOrders((prev) => [created, ...prev]);
+      setDevices((prev) =>
+        prev.map((device) =>
+          device.id === created.deviceId
+            ? {
+                ...device,
+                workOrders: [
+                  {
+                    id: created.id,
+                    status: created.status,
+                    problemDescription: created.problemDescription,
+                    diagnosis: created.diagnosis,
+                    laborCost: created.laborCost,
+                    createdAt: created.createdAt,
+                  },
+                  ...(device.workOrders ?? []),
+                ],
+              }
+            : device,
+        ),
+      );
       setWorkOrderForm(emptyWorkOrderForm);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -442,6 +501,19 @@ export function WorkerPage() {
 
       setWorkOrders((prev) =>
         prev.map((workOrder) => (workOrder.id === id ? updated : workOrder)),
+      );
+      setDevices((prev) =>
+        prev.map((device) => ({
+          ...device,
+          workOrders: device.workOrders?.map((workOrder) =>
+            workOrder.id === id
+              ? {
+                  ...workOrder,
+                  status: updated.status,
+                }
+              : workOrder,
+          ),
+        })),
       );
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -786,7 +858,7 @@ export function WorkerPage() {
           )}
 
           {devices.map((device) => (
-            <article className="item-row" key={device.id}>
+            <article className="item-row item-row-wide" key={device.id}>
               <div className="item-main">
                 <h3 className="item-title">
                   {device.brand} {device.model}
@@ -796,6 +868,17 @@ export function WorkerPage() {
                   {device.deviceType}
                 </p>
                 <p className="item-meta">{device.description}</p>
+                {device.workOrders && device.workOrders.length > 0 && (
+                  <div className="section">
+                    {device.workOrders.map((workOrder) => (
+                      <p className="item-meta" key={workOrder.id}>
+                        OT #{workOrder.id} -{" "}
+                        {WORK_ORDER_STATUS_LABELS[workOrder.status]} -{" "}
+                        {formatDateTime(workOrder.createdAt)}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="item-metrics">
@@ -807,6 +890,18 @@ export function WorkerPage() {
 
               <div className="actions">
                 <button
+                  className="button button-primary"
+                  onClick={() =>
+                    setExpandedDeviceId((current) =>
+                      current === device.id ? null : device.id,
+                    )
+                  }
+                  type="button"
+                >
+                  {expandedDeviceId === device.id ? "Contraer" : "Ver detalles"}
+                </button>
+
+                <button
                   className="button button-secondary"
                   onClick={() => startEditingDevice(device)}
                   type="button"
@@ -814,6 +909,14 @@ export function WorkerPage() {
                   Editar
                 </button>
               </div>
+
+              {expandedDeviceId === device.id && (
+                <DeviceDetails
+                  deviceId={device.id}
+                  onPhotoAdded={handleDevicePhotoAdded}
+                  onPhotoDeleted={handleDevicePhotoDeleted}
+                />
+              )}
             </article>
           ))}
         </div>
@@ -943,13 +1046,18 @@ export function WorkerPage() {
                 {workOrder.diagnosis && (
                   <p className="item-meta">Diagnostico: {workOrder.diagnosis}</p>
                 )}
+                <p className="item-meta">
+                  Costo mano de obra: {formatCurrency(workOrder.laborCost)}
+                </p>
               </div>
 
               <div className="item-metrics">
                 <span className="pill pill-blue">
                   {WORK_ORDER_STATUS_LABELS[workOrder.status]}
                 </span>
-                <span className="pill pill-muted">${workOrder.laborCost}</span>
+                <span className="pill pill-muted">
+                  {formatCurrency(workOrder.laborCost)}
+                </span>
               </div>
 
               <div className="actions">

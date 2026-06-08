@@ -39,6 +39,45 @@ export class DevicesService {
     },
   };
 
+  private detailInclude = {
+    client: {
+      select: this.clientSelect,
+    },
+    photos: {
+      orderBy: {
+        createdAt: 'desc' as const,
+      },
+    },
+    workOrders: {
+      orderBy: {
+        createdAt: 'desc' as const,
+      },
+      include: {
+        worker: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        reservation: {
+          include: {
+            worker: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+            service: true,
+          },
+        },
+      },
+    },
+  };
+
   findMy(clientId: number) {
     return this.prisma.device.findMany({
       where: {
@@ -107,6 +146,41 @@ export class DevicesService {
     this.ensureCanAccessDevice(authUser, device.clientId);
 
     return device;
+  }
+
+  async findDetails(authUser: AuthUser, id: number) {
+    const device = await this.prisma.device.findUnique({
+      where: {
+        id,
+      },
+      include: this.detailInclude,
+    });
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    this.ensureCanAccessDevice(authUser, device.clientId);
+
+    const reservations = device.workOrders
+      .map((workOrder) => workOrder.reservation)
+      .filter((reservation) => reservation !== null);
+
+    const clientPhone = reservations[0]?.contactPhone ?? null;
+    const workOrders = device.workOrders.map(({ reservation, ...workOrder }) => ({
+      ...workOrder,
+      reservationId: reservation?.id ?? workOrder.reservationId,
+    }));
+
+    return {
+      ...device,
+      client: {
+        ...device.client,
+        phone: clientPhone,
+      },
+      reservations,
+      workOrders,
+    };
   }
 
   async create(authUser: AuthUser, dto: CreateDeviceDto) {

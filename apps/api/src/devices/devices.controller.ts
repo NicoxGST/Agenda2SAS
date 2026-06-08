@@ -44,6 +44,12 @@ export class DevicesController {
     return this.devicesService.findAll(clientId ? Number(clientId) : undefined);
   }
 
+  @Get('devices/:id/details')
+  @Roles(Role.CLIENT)
+  findDetails(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.devicesService.findDetails(req.user, id);
+  }
+
   @Get('devices/:id')
   @Roles(Role.CLIENT)
   findOne(@Request() req: any, @Param('id', ParseIntPipe) id: number) {

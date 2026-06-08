@@ -596,6 +596,129 @@ h3 {
   background: var(--surface-soft);
 }
 
+.device-details {
+  display: grid;
+  gap: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.device-details-section {
+  display: grid;
+  gap: 12px;
+}
+
+.device-details-section h3 {
+  margin-bottom: 0;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-grid p {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+
+.detail-grid strong,
+.compact-row strong,
+.device-timeline-item strong {
+  color: var(--black);
+  font-size: 13px;
+}
+
+.detail-grid span,
+.compact-row span,
+.device-timeline-item p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.detail-grid-wide {
+  grid-column: 1 / -1;
+}
+
+.device-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.device-photo {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.device-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.device-photo figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.compact-list,
+.device-timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.compact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface-soft);
+}
+
+.compact-row div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.compact-row-rich {
+  align-items: start;
+}
+
+.device-timeline-item {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 12px;
+  border-left: 3px solid var(--blue);
+  padding-left: 12px;
+}
+
+.device-timeline-item > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.device-timeline-item p {
+  margin: 2px 0 0;
+}
+
 .auth-wrap {
   display: grid;
   place-items: center;
@@ -886,6 +1009,12 @@ h3 {
   }
 
   .item-row {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid,
+  .compact-row,
+  .device-timeline-item {
     grid-template-columns: 1fr;
   }
 
