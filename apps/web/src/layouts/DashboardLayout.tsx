@@ -8,9 +8,10 @@ const routeTitles: Record<string, string> = {
   "/users": "Gestión de usuarios",
   "/admin/servicios": "Gestión de servicios",
   "/admin/productos": "Gestión de productos",
-  "/worker": "Agenda",
-  "/ordenes": "Órdenes de trabajo",
-  "/client": "Mi panel",
+  "/worker":      "Agenda",
+  "/worker/jobs": "Mis Trabajos",
+  "/ordenes":     "Órdenes de trabajo",
+  "/client":      "Mi panel",
 };
 
 export function DashboardLayout() {

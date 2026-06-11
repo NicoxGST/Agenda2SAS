@@ -1,15 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
 
-import { ROLES } from "../../constants/roles";
 import { logoutRequest } from "../../services/auth.service";
 import { logout, useAuth } from "../../store/auth.store";
-
-type NavItem = {
-  to: string;
-  label: string;
-  icon: React.ReactNode;
-  end?: boolean;
-};
+import { roleNavMap } from "../../config/navigation";
 
 function IconGrid() {
   return (
@@ -70,6 +63,16 @@ function IconClipboard() {
   );
 }
 
+function IconBriefcase() {
+  return (
+    <svg className="db-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+      <line x1="12" y1="12" x2="12" y2="12" />
+    </svg>
+  );
+}
+
 function IconUser() {
   return (
     <svg className="db-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,32 +92,21 @@ function IconLogout() {
   );
 }
 
-const adminNav: NavItem[] = [
-  { to: "/admin",          label: "Dashboard",           icon: <IconGrid />,      end: true },
-  { to: "/users",          label: "Usuarios",             icon: <IconUsers /> },
-  { to: "/admin/servicios",label: "Servicios",            icon: <IconWrench /> },
-  { to: "/admin/productos",label: "Productos",            icon: <IconPackage /> },
-  { to: "/worker",         label: "Agenda",               icon: <IconCalendar /> },
-  { to: "/ordenes",        label: "Órdenes de trabajo",   icon: <IconClipboard /> },
-];
-
-const workerNav: NavItem[] = [
-  { to: "/worker",   label: "Mi Agenda",            icon: <IconCalendar />,  end: true },
-  { to: "/ordenes",  label: "Órdenes de trabajo",   icon: <IconClipboard /> },
-];
-
-const clientNav: NavItem[] = [
-  { to: "/client",   label: "Mi Panel",             icon: <IconUser />,      end: true },
-  { to: "/servicios",label: "Servicios",            icon: <IconWrench /> },
-  { to: "/productos",label: "Productos",            icon: <IconPackage /> },
-];
-
-const roleNav: Record<string, NavItem[]> = {
-  [ROLES.ADMIN]: adminNav,
-  [ROLES.SUPER_ADMIN]: adminNav,
-  [ROLES.WORKER]: workerNav,
-  [ROLES.CLIENT]: clientNav,
-};
+function getIcon(to: string): React.ReactNode {
+  switch (to) {
+    case "/admin":           return <IconGrid />;
+    case "/users":           return <IconUsers />;
+    case "/admin/servicios": return <IconWrench />;
+    case "/admin/productos": return <IconPackage />;
+    case "/worker":          return <IconCalendar />;
+    case "/worker/jobs":     return <IconBriefcase />;
+    case "/ordenes":         return <IconClipboard />;
+    case "/client":          return <IconUser />;
+    case "/servicios":       return <IconWrench />;
+    case "/productos":       return <IconPackage />;
+    default:                 return <IconGrid />;
+  }
+}
 
 type Props = {
   open: boolean;
@@ -126,7 +118,7 @@ export function Sidebar({ open, onClose }: Props) {
   const auth = useAuth();
   const user = auth.user;
 
-  const navItems = user ? (roleNav[user.role] ?? []) : [];
+  const navItems = user ? (roleNavMap[user.role] ?? []) : [];
   const initials = user ? user.name.slice(0, 2).toUpperCase() : "??";
 
   async function handleLogout() {
@@ -165,11 +157,10 @@ export function Sidebar({ open, onClose }: Props) {
               }
               onClick={onClose}
             >
-              {item.icon}
+              {getIcon(item.to)}
               {item.label}
             </NavLink>
           ))}
-
         </nav>
 
         <div className="db-sidebar-footer">

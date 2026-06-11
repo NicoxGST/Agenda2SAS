@@ -162,9 +162,15 @@ export class DevicesService {
 
     this.ensureCanAccessDevice(authUser, device.clientId);
 
+    const seenIds = new Set<number>();
     const reservations = device.workOrders
       .map((workOrder) => workOrder.reservation)
-      .filter((reservation) => reservation !== null);
+      .filter((reservation): reservation is NonNullable<typeof reservation> => {
+        if (!reservation) return false;
+        if (seenIds.has(reservation.id)) return false;
+        seenIds.add(reservation.id);
+        return true;
+      });
 
     const clientPhone = reservations[0]?.contactPhone ?? null;
     const workOrders = device.workOrders.map(({ reservation, ...workOrder }) => ({

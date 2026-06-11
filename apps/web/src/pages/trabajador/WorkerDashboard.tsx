@@ -17,11 +17,11 @@ const quickLinks = [
     desc: "Ver y confirmar citas",
   },
   {
-    to: "/worker",
+    to: "/worker/jobs",
     icon: "🔧",
     iconBg: "db-stat-icon-green",
-    title: "Órdenes de trabajo",
-    desc: "Reparaciones y diagnósticos",
+    title: "Mis trabajos",
+    desc: "Reparaciones y diagnósticos por visita",
   },
 ];
 

@@ -1,0 +1,33 @@
+export type ReservationStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "ATTENDED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
+  PENDING: "PENDIENTE",
+  CONFIRMED: "CONFIRMADA",
+  ATTENDED: "ATENDIDA",
+  CANCELLED: "CANCELADA",
+  NO_SHOW: "NO ASISTIÓ",
+};
+
+export type WorkOrderStatus =
+  | "RECEIVED"
+  | "DIAGNOSIS"
+  | "WAITING_PARTS"
+  | "IN_REPAIR"
+  | "READY"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export const WORK_ORDER_STATUS_LABELS: Record<WorkOrderStatus, string> = {
+  RECEIVED: "RECIBIDO",
+  DIAGNOSIS: "DIAGNÓSTICO",
+  WAITING_PARTS: "ESPERANDO PIEZAS",
+  IN_REPAIR: "EN REPARACIÓN",
+  READY: "LISTO",
+  DELIVERED: "ENTREGADO",
+  CANCELLED: "CANCELADO",
+};

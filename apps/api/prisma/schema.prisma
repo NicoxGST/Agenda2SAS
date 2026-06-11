@@ -22,6 +22,7 @@ model User {
   workerReservations    Reservation[]       @relation("ReservationWorker")
   devices               Device[]
   workerWorkOrders      WorkOrder[]         @relation("WorkOrderWorker")
+  workOrderHistories    WorkOrderHistory[]
 }
 
 model Service {
@@ -79,7 +80,7 @@ model Reservation {
   client  User    @relation("ReservationClient", fields: [clientId], references: [id])
   worker  User    @relation("ReservationWorker", fields: [workerId], references: [id])
   service Service @relation(fields: [serviceId], references: [id])
-  workOrder WorkOrder?
+  workOrders WorkOrder[]
 
   @@unique([workerId, scheduledAt])
   @@index([clientId, scheduledAt])
@@ -119,7 +120,7 @@ model WorkOrder {
   id                 Int             @id @default(autoincrement())
   deviceId           Int
   workerId           Int
-  reservationId      Int?            @unique
+  reservationId      Int?
   problemDescription String
   diagnosis          String?
   laborCost          Int             @default(0)
@@ -127,12 +128,27 @@ model WorkOrder {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
-  device      Device       @relation(fields: [deviceId], references: [id])
-  worker      User         @relation("WorkOrderWorker", fields: [workerId], references: [id])
-  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  device             Device             @relation(fields: [deviceId], references: [id])
+  worker             User               @relation("WorkOrderWorker", fields: [workerId], references: [id])
+  reservation        Reservation?       @relation(fields: [reservationId], references: [id])
+  workOrderHistories WorkOrderHistory[]
 
   @@index([deviceId])
   @@index([workerId])
+}
+
+model WorkOrderHistory {
+  id              Int             @id @default(autoincrement())
+  workOrderId     Int
+  previousStatus  WorkOrderStatus
+  newStatus       WorkOrderStatus
+  createdAt       DateTime        @default(now())
+  changedByUserId Int
+  changedBy       User            @relation(fields: [changedByUserId], references: [id])
+  workOrder       WorkOrder       @relation(fields: [workOrderId], references: [id])
+
+  @@index([changedByUserId])
+  @@index([workOrderId, createdAt])
 }
 
 enum Role {

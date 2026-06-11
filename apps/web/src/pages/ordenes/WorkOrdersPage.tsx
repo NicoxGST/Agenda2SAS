@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 
-import type { Device } from "../../services/devices.service";
+import type { Device, Worker, WorkOrder, WorkOrderStatus } from "../../types";
+import { WORK_ORDER_STATUS_LABELS } from "../../types";
 import { getDevices } from "../../services/devices.service";
-import type { Worker } from "../../services/availability.service";
 import { getWorkers } from "../../services/availability.service";
-import type { WorkOrder, WorkOrderStatus } from "../../services/work-orders.service";
 import {
   createWorkOrder,
   getWorkOrders,
   updateWorkOrderStatus,
-  WORK_ORDER_STATUS_LABELS,
 } from "../../services/work-orders.service";
 import { ROLES } from "../../constants/roles";
 import { useAuth } from "../../store/auth.store";

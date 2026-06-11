@@ -4,17 +4,17 @@ import {
   createDevicePhoto,
   deleteDevicePhoto,
   getDeviceDetails,
-  type DeviceDetailsData,
-  type DevicePhoto,
 } from "../../services/devices.service";
+import type {
+  DeviceDetailsData,
+  DevicePhoto,
+  ReservationStatus,
+  WorkOrderStatus,
+} from "../../types";
 import {
   RESERVATION_STATUS_LABELS,
-  type ReservationStatus,
-} from "../../services/reservations.service";
-import {
   WORK_ORDER_STATUS_LABELS,
-  type WorkOrderStatus,
-} from "../../services/work-orders.service";
+} from "../../types";
 
 type DeviceDetailsProps = {
   deviceId: number;
@@ -369,6 +369,9 @@ export function DeviceDetails({
                   <span>{workOrder.problemDescription}</span>
                   {workOrder.diagnosis && (
                     <span>Diagnostico: {workOrder.diagnosis}</span>
+                  )}
+                  {workOrder.worker && (
+                    <span>Técnico: {workOrder.worker.name}</span>
                   )}
                   <span>Creada: {formatDateTime(workOrder.createdAt)}</span>
                 </div>

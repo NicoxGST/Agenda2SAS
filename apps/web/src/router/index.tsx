@@ -11,6 +11,7 @@ import { ROLES } from "../constants/roles";
 import { AdminDashboard } from "../pages/admin/AdminDashboard";
 import { UserManagementPage } from "../pages/admin/UserManagementPage";
 import { WorkerPage } from "../pages/trabajador/WorkerPage";
+import { MyJobsPage } from "../pages/trabajador/MyJobsPage";
 import { WorkOrdersPage } from "../pages/ordenes/WorkOrdersPage";
 import { ClientPage } from "../pages/cliente/ClientPage";
 import { ServiceManagementPage } from "../pages/servicios/ServiceManagementPage";
@@ -76,6 +77,15 @@ export const router = createBrowserRouter([
         element: (
           <RouteGuard allowedRoles={[ROLES.WORKER, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
             <WorkerPage />
+          </RouteGuard>
+        ),
+      },
+
+      {
+        path: "worker/jobs",
+        element: (
+          <RouteGuard allowedRoles={[ROLES.WORKER, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <MyJobsPage />
           </RouteGuard>
         ),
       },

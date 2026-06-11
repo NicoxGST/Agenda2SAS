@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls -la)",
+      "Bash(mkdir -p /home/erik/proyectos_Js/agenda2/apps/web/src/pages/trabajador/hooks /home/erik/proyectos_Js/agenda2/apps/web/src/pages/trabajador/sections)",
+      "Bash(mkdir -p \"//wsl.localhost/Ubuntu/home/erik/proyectos_Js/agenda2/apps/web/src/pages/trabajador/hooks\" \"//wsl.localhost/Ubuntu/home/erik/proyectos_Js/agenda2/apps/web/src/pages/trabajador/sections\")",
+      "PowerShell(wsl -e bash -c \"cd /home/erik/proyectos_Js/agenda2 && npx tsc --project apps/web/tsconfig.json --noEmit 2>&1 | head -80\")",
+      "PowerShell(wsl -e bash -c \"which node; which npm; ls /home/erik/proyectos_Js/agenda2/node_modules/.bin/tsc 2>/dev/null || echo 'no tsc'\")",
+      "PowerShell(wsl -e bash -c \"ls /home/erik/proyectos_Js/agenda2/apps/api/prisma/migrations/\")",
+      "PowerShell(wsl -e bash -c \"ls /home/erik/proyectos_Js/agenda2/apps/api/prisma/migrations/20260608120000_add_work_order_history/\")",
+      "PowerShell(wsl -e bash -c \"rm -rf /home/erik/proyectos_Js/agenda2/apps/api/prisma/migrations/20260608120000_add_work_order_history && echo 'Deleted'\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2 && pnpm --filter api exec prisma migrate dev --name reservation-workorders-1-to-n 2>&1\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2/apps/api && PGPASSWORD='' node -e \\\\\"const { Client } = require\\('pg'\\); \\\\\" 2>&1 | head -5; cat prisma/.env 2>/dev/null || cat ../../.env 2>/dev/null | grep DATABASE | head -3\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2/apps/api && pnpm exec prisma db pull --print 2>&1 | grep -A 30 'WorkOrderHistory'\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2 && pnpm --filter api exec tsc --noEmit 2>&1\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2 && pnpm --filter web exec tsc --noEmit 2>&1\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2 && pnpm --filter api exec prisma db seed 2>&1\")",
+      "PowerShell(wsl -e bash -c \"export PATH=/home/erik/.nvm/versions/node/v24.15.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd /home/erik/proyectos_Js/agenda2/apps/api && pnpm exec ts-node prisma/seed.ts 2>&1\")"
+    ],
+    "additionalDirectories": [
+      "\\home\\erik\\proyectos_Js\\agenda2\\apps\\web\\src\\pages\\trabajador",
+      "\\\\wsl.localhost\\Ubuntu\\home\\erik\\proyectos_Js\\agenda2\\apps\\web\\src\\pages\\trabajador"
+    ]
+  }
+}

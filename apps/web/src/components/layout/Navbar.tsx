@@ -1,58 +1,26 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-import { ROLES } from "../../constants/roles";
 import { logoutRequest } from "../../services/auth.service";
 import { logout, useAuth } from "../../store/auth.store";
+import { roleNavMap } from "../../config/navigation";
 
-type MenuItem = {
-  to: string;
-  label: string;
-};
-
-const roleMenus: Record<string, MenuItem[]> = {
-  [ROLES.CLIENT]: [
-    { to: "/client", label: "Mi Panel" },
-  ],
-
-  [ROLES.WORKER]: [
-    { to: "/worker",  label: "Mi Agenda" },
-    { to: "/ordenes", label: "Órdenes" },
-  ],
-
-  [ROLES.ADMIN]: [
-    { to: "/admin",  label: "Panel Admin" },
-    { to: "/worker", label: "Agenda" },
-  ],
-
-  [ROLES.SUPER_ADMIN]: [
-    { to: "/admin",  label: "Panel Admin" },
-    { to: "/worker", label: "Agenda" },
-  ],
-};
+const guestMenu = [
+  { to: "/login",    label: "Login" },
+  { to: "/register", label: "Registro" },
+];
 
 export function Navbar() {
   const navigate = useNavigate();
-
   const auth = useAuth();
-
   const user = auth.user;
-
   const [open, setOpen] = useState(false);
 
   const menu = user
-    ? roleMenus[user.role] || []
-    : [
-        {
-          to: "/login",
-          label: "Login",
-        },
-
-        {
-          to: "/register",
-          label: "Registro",
-        },
-      ];
+    ? (roleNavMap[user.role] ?? [])
+        .filter((item) => item.showInNavbar)
+        .map((item) => ({ to: item.to, label: item.navbarLabel ?? item.label }))
+    : guestMenu;
 
   function closeMenu() {
     setOpen(false);
@@ -67,7 +35,6 @@ export function Navbar() {
       console.error("Logout request failed", err);
     } finally {
       logout();
-
       navigate("/");
     }
   }
@@ -114,39 +81,39 @@ export function Navbar() {
             aria-label="Menu principal"
             className={`nav-panel ${open ? "is-open" : ""}`}
           >
-          {user && (
-            <div className="nav-user">
-              <div className="nav-user-text">
-                <span className="nav-user-name">{user.name}</span>
-                <span className="nav-user-role">{user.role}</span>
+            {user && (
+              <div className="nav-user">
+                <div className="nav-user-text">
+                  <span className="nav-user-name">{user.name}</span>
+                  <span className="nav-user-role">{user.role}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="nav-links">
-            {menu.map((item) => (
-              <NavLink
-                className="nav-link"
-                key={item.to}
-                to={item.to}
-                onClick={closeMenu}
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-
-          {user && (
-            <div className="nav-footer">
-              <button
-                className="button button-ghost"
-                onClick={handleLogout}
-                type="button"
-              >
-                Salir
-              </button>
+            <div className="nav-links">
+              {menu.map((item) => (
+                <NavLink
+                  className="nav-link"
+                  key={item.to}
+                  to={item.to}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
             </div>
-          )}
+
+            {user && (
+              <div className="nav-footer">
+                <button
+                  className="button button-ghost"
+                  onClick={handleLogout}
+                  type="button"
+                >
+                  Salir
+                </button>
+              </div>
+            )}
           </nav>
         </div>
       </div>

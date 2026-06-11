@@ -66,7 +66,7 @@ const quickLinks = [
     desc: "Disponibilidad y reservas",
   },
   {
-    to: "/worker",
+    to: "/ordenes",
     icon: "📋",
     iconBg: "db-stat-icon-red",
     title: "Órdenes de trabajo",

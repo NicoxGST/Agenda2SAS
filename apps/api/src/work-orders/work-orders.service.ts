@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Role, WorkOrderStatus } from '@prisma/client';
+import { Role, WorkOrderStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
@@ -85,34 +85,24 @@ export class WorkOrdersService {
       await this.ensureReservationCanBeLinked(
         authUser,
         dto.reservationId,
+        dto.deviceId,
         device.clientId,
         workerId,
       );
     }
 
-    try {
-      return await this.prisma.workOrder.create({
-        data: {
-          deviceId: dto.deviceId,
-          workerId,
-          reservationId: dto.reservationId,
-          problemDescription: dto.problemDescription,
-          diagnosis: dto.diagnosis,
-          laborCost: dto.laborCost ?? 0,
-          status: WorkOrderStatus.RECEIVED,
-        },
-        include: this.includeDetails,
-      });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new BadRequestException('Reservation already has a work order');
-      }
-
-      throw error;
-    }
+    return this.prisma.workOrder.create({
+      data: {
+        deviceId: dto.deviceId,
+        workerId,
+        reservationId: dto.reservationId,
+        problemDescription: dto.problemDescription,
+        diagnosis: dto.diagnosis,
+        laborCost: dto.laborCost ?? 0,
+        status: WorkOrderStatus.RECEIVED,
+      },
+      include: this.includeDetails,
+    });
   }
 
   async update(authUser: AuthUser, id: number, dto: UpdateWorkOrderDto) {
@@ -132,6 +122,7 @@ export class WorkOrdersService {
       await this.ensureReservationCanBeLinked(
         authUser,
         dto.reservationId,
+        deviceId,
         device.clientId,
         workerId,
         id,
@@ -234,6 +225,7 @@ export class WorkOrdersService {
   private async ensureReservationCanBeLinked(
     authUser: AuthUser,
     reservationId: number,
+    deviceId: number,
     clientId: number,
     workerId: number,
     currentWorkOrderId?: number,
@@ -243,7 +235,7 @@ export class WorkOrdersService {
         id: reservationId,
       },
       include: {
-        workOrder: true,
+        workOrders: true,
       },
     });
 
@@ -263,11 +255,14 @@ export class WorkOrdersService {
       throw new BadRequestException('Reservation worker must match work order worker');
     }
 
-    if (
-      reservation.workOrder &&
-      reservation.workOrder.id !== currentWorkOrderId
-    ) {
-      throw new BadRequestException('Reservation already has a work order');
+    const conflict = reservation.workOrders.find(
+      (wo) => wo.deviceId === deviceId && wo.id !== currentWorkOrderId,
+    );
+
+    if (conflict) {
+      throw new BadRequestException(
+        'A work order for this device already exists in this reservation',
+      );
     }
   }
 }
