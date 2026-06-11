@@ -12,71 +12,22 @@ type MenuItem = {
 
 const roleMenus: Record<string, MenuItem[]> = {
   [ROLES.CLIENT]: [
-    {
-      to: "/client",
-      label: "Mi Panel",
-    },
+    { to: "/client", label: "Mi Panel" },
   ],
 
   [ROLES.WORKER]: [
-    {
-      to: "/worker",
-      label: "Gestor",
-    },
+    { to: "/worker",  label: "Mi Agenda" },
+    { to: "/ordenes", label: "Órdenes" },
   ],
 
   [ROLES.ADMIN]: [
-    {
-      to: "/admin",
-      label: "Panel Admin",
-    },
-
-    {
-      to: "/users",
-      label: "Gestion",
-    },
-
-    {
-      to: "/servicios",
-      label: "Servicios",
-    },
-
-    {
-      to: "/productos",
-      label: "Productos",
-    },
-
-    {
-      to: "/worker",
-      label: "Agenda",
-    },
+    { to: "/admin",  label: "Panel Admin" },
+    { to: "/worker", label: "Agenda" },
   ],
 
   [ROLES.SUPER_ADMIN]: [
-    {
-      to: "/admin",
-      label: "Panel Admin",
-    },
-
-    {
-      to: "/users",
-      label: "Gestion",
-    },
-
-    {
-      to: "/servicios",
-      label: "Servicios",
-    },
-
-    {
-      to: "/productos",
-      label: "Productos",
-    },
-
-    {
-      to: "/worker",
-      label: "Agenda",
-    },
+    { to: "/admin",  label: "Panel Admin" },
+    { to: "/worker", label: "Agenda" },
   ],
 };
 
@@ -129,8 +80,8 @@ export function Navbar() {
     <header className="topbar">
       <div className="topbar-inner">
         <Link className="brand" to="/" onClick={closeMenu}>
-          <span className="brand-mark">A2</span>
-          <span>Agenda2SAS</span>
+          <img src="/logo.jpeg" alt="LinaresTech" className="brand-logo" />
+          <span className="brand-name">LinaresTech</span>
         </Link>
 
         <div className="topbar-links">

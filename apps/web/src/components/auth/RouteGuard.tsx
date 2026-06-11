@@ -23,7 +23,7 @@ export function RouteGuard({
   if (!user) {
     return (
       <Navigate
-        to="/login"
+        to="/"
         replace
       />
     );

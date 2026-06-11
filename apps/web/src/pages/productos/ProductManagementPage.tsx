@@ -18,19 +18,11 @@ type FormState = {
   stock: string;
 };
 
-const emptyForm: FormState = {
-  name: "",
-  description: "",
-  price: "",
-  stock: "",
-};
+const emptyForm: FormState = { name: "", description: "", price: "", stock: "" };
 
 function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Ocurrio un error";
+  if (error instanceof Error) return error.message;
+  return "Ocurrió un error";
 }
 
 export function ProductManagementPage() {
@@ -42,8 +34,7 @@ export function ProductManagementPage() {
   const auth = useAuth();
 
   const isManager =
-    auth.user?.role === ROLES.ADMIN ||
-    auth.user?.role === ROLES.SUPER_ADMIN;
+    auth.user?.role === ROLES.ADMIN || auth.user?.role === ROLES.SUPER_ADMIN;
 
   useEffect(() => {
     let ignore = false;
@@ -51,31 +42,19 @@ export function ProductManagementPage() {
     async function loadInitialProducts() {
       try {
         setError("");
-
         const data = isManager ? await getProducts() : await getPublicProducts();
-
-        if (!ignore) {
-          setProducts(data);
-        }
+        if (!ignore) setProducts(data);
       } catch (err: unknown) {
-        if (!ignore) {
-          setError(getErrorMessage(err));
-        }
+        if (!ignore) setError(getErrorMessage(err));
       }
     }
 
     void loadInitialProducts();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+    return () => { ignore = true; };
+  }, [isManager]);
 
   function updateForm(key: keyof FormState, value: string) {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function resetForm() {
@@ -85,7 +64,6 @@ export function ProductManagementPage() {
 
   function startEditing(product: Product) {
     setEditingId(product.id);
-
     setForm({
       name: product.name,
       description: product.description,
@@ -106,24 +84,17 @@ export function ProductManagementPage() {
         stock: Number(form.stock),
       };
 
-      if (
-        !payload.name ||
-        !payload.description ||
-        !payload.price ||
-        payload.stock < 0
-      ) {
+      if (!payload.name || !payload.description || !payload.price || payload.stock < 0) {
         throw new Error("Completa todos los campos");
       }
 
       if (editingId) {
         const updated = await updateProduct(editingId, payload);
-
         setProducts((prev) =>
-          prev.map((product) => (product.id === editingId ? updated : product)),
+          prev.map((p) => (p.id === editingId ? updated : p)),
         );
       } else {
         const created = await createProduct(payload);
-
         setProducts((prev) => [created, ...prev]);
       }
 
@@ -138,14 +109,8 @@ export function ProductManagementPage() {
   async function handleToggle(product: Product) {
     try {
       setError("");
-
-      const updated = await updateProduct(product.id, {
-        isActive: !product.isActive,
-      });
-
-      setProducts((prev) =>
-        prev.map((item) => (item.id === product.id ? updated : item)),
-      );
+      const updated = await updateProduct(product.id, { isActive: !product.isActive });
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? updated : p)));
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     }
@@ -154,10 +119,8 @@ export function ProductManagementPage() {
   async function handleDelete(id: number) {
     try {
       setError("");
-
       await deleteProduct(id);
-
-      setProducts((prev) => prev.filter((product) => product.id !== id));
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     }
@@ -165,45 +128,140 @@ export function ProductManagementPage() {
 
   return (
     <>
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Inventario</p>
-          <h1>Productos</h1>
-          <p className="page-copy">
-            Lista de productos registrados con nombre y precio.
-          </p>
-        </div>
-      </header>
+      <div className="db-welcome">
+        <span className="db-welcome-tag">Inventario</span>
+        <h2>Productos</h2>
+        <p>Lista de productos registrados con nombre, precio y stock.</p>
+      </div>
 
-      <section className="section">
-        <div className="page-header">
-          <div>
-            <h2>Listado</h2>
-            <p className="page-copy">
-              {products.length} producto{products.length === 1 ? "" : "s"} disponibles.
-            </p>
+      {isManager && (
+        <div className="db-card db-card-mb">
+          <div className="db-card-header">
+            <h3 className="db-card-title">
+              {editingId ? "Editar producto" : "Nuevo producto"}
+            </h3>
+            {editingId && (
+              <button className="button button-ghost button-small" onClick={resetForm} type="button">
+                Cancelar
+              </button>
+            )}
+          </div>
+          <div className="db-card-body">
+            <div className="form-grid">
+              <label className="field">
+                <span>Nombre</span>
+                <input
+                  placeholder="Ej: Cable HDMI 2m"
+                  value={form.name}
+                  onChange={(e) => updateForm("name", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Descripción</span>
+                <input
+                  placeholder="Descripción del producto"
+                  value={form.description}
+                  onChange={(e) => updateForm("description", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Precio ($)</span>
+                <input
+                  min="0"
+                  placeholder="0"
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => updateForm("price", e.target.value)}
+                />
+              </label>
+
+              <label className="field">
+                <span>Stock</span>
+                <input
+                  min="0"
+                  placeholder="0"
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => updateForm("stock", e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="actions actions-mt">
+              <button
+                className="button button-primary"
+                disabled={loading}
+                onClick={handleSubmit}
+                type="button"
+              >
+                {loading ? "Guardando…" : editingId ? "Actualizar" : "Crear producto"}
+              </button>
+            </div>
+
+            {error && <p className="alert alert-error">{error}</p>}
           </div>
         </div>
+      )}
 
-        <div className="list">
-          {products.length === 0 && (
-            <div className="empty-state">No hay productos registrados.</div>
-          )}
-
-          {products.map((product) => (
-            <article className="item-row" key={product.id}>
-              <div className="item-main">
-                <h3 className="item-title">{product.name}</h3>
-              </div>
-
-              <div className="item-metrics">
-                <span className="pill pill-blue">${product.price}</span>
-              </div>
-
-            </article>
-          ))}
+      <div className="db-card">
+        <div className="db-card-header">
+          <h3 className="db-card-title">
+            Listado — {products.length} producto{products.length === 1 ? "" : "s"}
+          </h3>
         </div>
-      </section>
+        <div className="db-card-body">
+          <div className="list">
+            {products.length === 0 && (
+              <div className="empty-state">No hay productos registrados.</div>
+            )}
+
+            {products.map((product) => (
+              <article className="item-row" key={product.id}>
+                <div className="item-main">
+                  <h3 className="item-title">{product.name}</h3>
+                  <p className="item-description">{product.description}</p>
+                </div>
+
+                <div className="item-metrics">
+                  <span className="pill pill-blue">${product.price}</span>
+                  <span className="pill pill-orange">Stock: {product.stock}</span>
+                  <span className={`pill ${product.isActive ? "pill-success" : "pill-muted"}`}>
+                    {product.isActive ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+
+                {isManager && (
+                  <div className="actions">
+                    <button
+                      className="button button-secondary button-small"
+                      onClick={() => startEditing(product)}
+                      type="button"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className={`button button-small ${product.isActive ? "button-warning" : "button-secondary"}`}
+                      onClick={() => handleToggle(product)}
+                      type="button"
+                    >
+                      {product.isActive ? "Desactivar" : "Activar"}
+                    </button>
+                    <button
+                      className="button button-danger button-small"
+                      onClick={() => handleDelete(product.id)}
+                      type="button"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
     </>
   );
 }
