@@ -1,26 +1,53 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../store/auth.store";
-import { getUsers } from "../../services/users.service";
-import { getServices } from "../../services/services.service";
-import { getProducts } from "../../services/products.service";
+import { getAllReservations } from "../../services/reservations.service";
+import { getWorkOrders } from "../../services/work-orders.service";
+import { getWorkers } from "../../services/availability.service";
+import type { Reservation, WorkOrder, Worker, WorkOrderStatus } from "../../types";
+import { WORK_ORDER_STATUS_LABELS } from "../../types";
 
-type Stats = {
-  users: number | null;
-  services: number | null;
-  products: number | null;
+const IN_PROCESS = new Set<WorkOrderStatus>(["RECEIVED", "DIAGNOSIS", "WAITING_PARTS", "IN_REPAIR"]);
+const ACTIVE     = new Set<WorkOrderStatus>(["RECEIVED", "DIAGNOSIS", "WAITING_PARTS", "IN_REPAIR", "READY"]);
+
+const statusPill: Record<WorkOrderStatus, string> = {
+  RECEIVED:      "pill-blue",
+  DIAGNOSIS:     "pill-orange",
+  WAITING_PARTS: "pill-orange",
+  IN_REPAIR:     "pill-blue",
+  READY:         "pill-success",
+  DELIVERED:     "pill-success",
+  CANCELLED:     "pill-muted",
 };
 
-function StatCard({
-  value,
+function localDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function monthStartStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function formatCurrency(v: number) {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(v);
+}
+
+function KpiCard({
   label,
+  value,
   iconClass,
   icon,
   loading,
 }: {
-  value: number | null;
   label: string;
+  value: string | number;
   iconClass: string;
   icon: string;
   loading: boolean;
@@ -29,175 +56,247 @@ function StatCard({
     <div className="db-stat">
       <div className={`db-stat-icon ${iconClass}`}>{icon}</div>
       <div>
-        <div className="db-stat-value">{loading ? "…" : (value ?? "—")}</div>
+        <div className="db-stat-value">{loading ? "…" : value}</div>
         <p className="db-stat-label">{label}</p>
       </div>
     </div>
   );
 }
 
-const quickLinks = [
-  {
-    to: "/users",
-    icon: "👥",
-    iconBg: "db-stat-icon-blue",
-    title: "Usuarios",
-    desc: "Crear, editar y gestionar roles",
-  },
-  {
-    to: "/servicios",
-    icon: "🔧",
-    iconBg: "db-stat-icon-orange",
-    title: "Servicios",
-    desc: "Administrar servicios activos",
-  },
-  {
-    to: "/productos",
-    icon: "📦",
-    iconBg: "db-stat-icon-green",
-    title: "Productos",
-    desc: "Catálogo, stock y precios",
-  },
-  {
-    to: "/worker",
-    icon: "📅",
-    iconBg: "db-stat-icon-purple",
-    title: "Agenda",
-    desc: "Disponibilidad y reservas",
-  },
-  {
-    to: "/ordenes",
-    icon: "📋",
-    iconBg: "db-stat-icon-red",
-    title: "Órdenes de trabajo",
-    desc: "Seguimiento de reparaciones",
-  },
-];
+const sectionLabel: React.CSSProperties = {
+  fontWeight: 600,
+  fontSize: "0.75rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "var(--color-muted, #6b7280)",
+  marginBottom: "0.5rem",
+  marginTop: "1.5rem",
+  display: "block",
+};
 
-const statusRows = [
-  { dot: "db-dot-green", label: "API de usuarios",    sub: "Operativa", tag: "OK", pill: "pill-success" },
-  { dot: "db-dot-green", label: "API de servicios",   sub: "Operativa", tag: "OK", pill: "pill-success" },
-  { dot: "db-dot-green", label: "API de productos",   sub: "Operativa", tag: "OK", pill: "pill-success" },
-  { dot: "db-dot-green", label: "Órdenes de trabajo", sub: "Operativa", tag: "OK", pill: "pill-success" },
-];
+const tableHead: React.CSSProperties = {
+  textAlign: "left",
+  padding: "0.4rem 0.5rem",
+  fontWeight: 600,
+  fontSize: "0.8rem",
+  borderBottom: "1px solid var(--border)",
+  color: "var(--color-muted, #6b7280)",
+};
 
-const guideRows = [
-  { dot: "db-dot-blue",   label: "Agregar nuevo usuario",      sub: "Ir a Usuarios → Nuevo usuario" },
-  { dot: "db-dot-orange", label: "Publicar un servicio",       sub: "Ir a Servicios → Agregar servicio" },
-  { dot: "db-dot-green",  label: "Gestionar disponibilidad",   sub: "Ir a Agenda → Disponibilidad" },
-  { dot: "db-dot-purple", label: "Ver órdenes de trabajo",     sub: "Ir a Agenda → Órdenes" },
-];
+const tableCell: React.CSSProperties = {
+  padding: "0.5rem 0.5rem",
+  borderBottom: "1px solid var(--border)",
+  fontSize: "0.875rem",
+};
 
 export function AdminDashboard() {
   const auth = useAuth();
   const user = auth.user;
+  const navigate = useNavigate();
+  const firstName = user?.name.split(" ")[0] ?? "Administrador";
 
-  const [stats, setStats] = useState<Stats>({ users: null, services: null, products: null });
-  const [loading, setLoading] = useState(true);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [workOrders,   setWorkOrders]   = useState<WorkOrder[]>([]);
+  const [workers,      setWorkers]      = useState<Worker[]>([]);
+  const [loading,      setLoading]      = useState(true);
 
   useEffect(() => {
-    async function loadStats() {
-      const [usersRes, servicesRes, productsRes] = await Promise.allSettled([
-        getUsers(),
-        getServices(),
-        getProducts(),
+    async function load() {
+      const [resRes, woRes, wkRes] = await Promise.allSettled([
+        getAllReservations(),
+        getWorkOrders(),
+        getWorkers(),
       ]);
-
-      setStats({
-        users:
-          usersRes.status === "fulfilled" && Array.isArray(usersRes.value)
-            ? usersRes.value.length
-            : null,
-        services:
-          servicesRes.status === "fulfilled" && Array.isArray(servicesRes.value)
-            ? servicesRes.value.length
-            : null,
-        products:
-          productsRes.status === "fulfilled" && Array.isArray(productsRes.value)
-            ? productsRes.value.length
-            : null,
-      });
-
+      if (resRes.status === "fulfilled") setReservations(resRes.value);
+      if (woRes.status  === "fulfilled") setWorkOrders(woRes.value);
+      if (wkRes.status  === "fulfilled") setWorkers(wkRes.value);
       setLoading(false);
     }
-
-    loadStats();
+    void load();
   }, []);
 
-  const firstName = user?.name.split(" ")[0] ?? "Administrador";
+  const today      = localDateStr();
+  const monthStart = monthStartStr();
+
+  // ── Reservas KPIs ──────────────────────────────────
+  const reservasHoy  = useMemo(
+    () => reservations.filter((r) => r.scheduledAt.slice(0, 10) === today).length,
+    [reservations, today],
+  );
+  const pendientes = useMemo(
+    () => reservations.filter((r) => r.status === "PENDING").length,
+    [reservations],
+  );
+  const confirmadas = useMemo(
+    () => reservations.filter((r) => r.status === "CONFIRMED").length,
+    [reservations],
+  );
+
+  // ── Órdenes de trabajo KPIs ────────────────────────
+  const enProceso = useMemo(
+    () => workOrders.filter((wo) => IN_PROCESS.has(wo.status)).length,
+    [workOrders],
+  );
+  const listas = useMemo(
+    () => workOrders.filter((wo) => wo.status === "READY").length,
+    [workOrders],
+  );
+  const entregadasMes = useMemo(
+    () => workOrders.filter((wo) => wo.status === "DELIVERED" && wo.createdAt.slice(0, 10) >= monthStart).length,
+    [workOrders, monthStart],
+  );
+
+  // ── Indicadores económicos ─────────────────────────
+  const moObraPendiente = useMemo(
+    () => workOrders.filter((wo) => ACTIVE.has(wo.status)).reduce((sum, wo) => sum + wo.laborCost, 0),
+    [workOrders],
+  );
+  const moObraFacturada = useMemo(
+    () => workOrders
+      .filter((wo) => wo.status === "DELIVERED" && wo.createdAt.slice(0, 10) >= monthStart)
+      .reduce((sum, wo) => sum + wo.laborCost, 0),
+    [workOrders, monthStart],
+  );
+
+  // ── Carga de técnicos ──────────────────────────────
+  const workerRows = useMemo(() => {
+    const counts: Record<number, number> = {};
+    for (const wo of workOrders) {
+      if (ACTIVE.has(wo.status)) {
+        counts[wo.workerId] = (counts[wo.workerId] ?? 0) + 1;
+      }
+    }
+    return workers
+      .map((w) => ({ id: w.id, name: w.name, active: counts[w.id] ?? 0 }))
+      .sort((a, b) => b.active - a.active);
+  }, [workOrders, workers]);
+
+  // ── Últimas 10 órdenes ─────────────────────────────
+  const lastOrders = useMemo(
+    () => [...workOrders].sort((a, b) => b.id - a.id).slice(0, 10),
+    [workOrders],
+  );
 
   return (
     <>
       <div className="db-welcome">
         <span className="db-welcome-tag">Panel de administración</span>
-        <h2>Bienvenido, {firstName} 👋</h2>
-        <p>
-          Gestiona usuarios, servicios, productos y el calendario de trabajo
-          desde un solo lugar.
-        </p>
+        <h2>Bienvenido, {firstName}</h2>
+        <p>Consola operativa del taller.</p>
       </div>
 
-      <div className="db-stats">
-        <StatCard value={stats.users}    label="Usuarios registrados"    iconClass="db-stat-icon-blue"   icon="👥" loading={loading} />
-        <StatCard value={stats.services} label="Servicios activos"       iconClass="db-stat-icon-orange" icon="🔧" loading={loading} />
-        <StatCard value={stats.products} label="Productos en catálogo"   iconClass="db-stat-icon-green"  icon="📦" loading={loading} />
-        <StatCard value={null}           label="Órdenes pendientes"      iconClass="db-stat-icon-purple" icon="📋" loading={false} />
+      {/* ── Reservas ── */}
+      <span style={sectionLabel}>Reservas</span>
+      <div className="db-stats" style={{ marginBottom: "0.5rem" }}>
+        <KpiCard label="Hoy"         value={reservasHoy} iconClass="db-stat-icon-blue"   icon="📅" loading={loading} />
+        <KpiCard label="Pendientes"  value={pendientes}  iconClass="db-stat-icon-orange" icon="🕐" loading={loading} />
+        <KpiCard label="Confirmadas" value={confirmadas} iconClass="db-stat-icon-green"  icon="✅" loading={loading} />
       </div>
 
+      {/* ── Órdenes de trabajo ── */}
+      <span style={sectionLabel}>Órdenes de trabajo</span>
+      <div className="db-stats" style={{ marginBottom: "0.5rem" }}>
+        <KpiCard label="En proceso"           value={enProceso}     iconClass="db-stat-icon-blue"   icon="🔧" loading={loading} />
+        <KpiCard label="Listas para entrega"  value={listas}        iconClass="db-stat-icon-green"  icon="📦" loading={loading} />
+        <KpiCard label="Entregadas este mes"  value={entregadasMes} iconClass="db-stat-icon-purple" icon="🚀" loading={loading} />
+      </div>
+
+      {/* ── Indicadores económicos ── */}
+      <span style={sectionLabel}>Indicadores económicos</span>
+      <div className="db-stats" style={{ marginBottom: "1.5rem" }}>
+        <KpiCard label="Mano de obra pendiente"    value={formatCurrency(moObraPendiente)} iconClass="db-stat-icon-orange" icon="⏳" loading={loading} />
+        <KpiCard label="Facturado este mes"        value={formatCurrency(moObraFacturada)} iconClass="db-stat-icon-green"  icon="💰" loading={loading} />
+      </div>
+
+      {/* ── Técnicos ── */}
       <div className="db-card db-card-mb">
         <div className="db-card-header">
-          <h3 className="db-card-title">Accesos rápidos</h3>
+          <h3 className="db-card-title">Carga de técnicos</h3>
+          {!loading && (
+            <span className="pill pill-muted db-pill-sm">{workerRows.length} técnico{workerRows.length === 1 ? "" : "s"}</span>
+          )}
         </div>
         <div className="db-card-body">
-          <div className="db-quick-grid db-quick-grid-flush">
-            {quickLinks.map((item) => (
-              <Link key={item.title} className="db-quick-card" to={item.to}>
-                <div className={`db-quick-icon ${item.iconBg}`}>{item.icon}</div>
-                <div className="db-quick-text">
-                  <h3>{item.title}</h3>
-                  <p>{item.desc}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {loading ? (
+            <div className="empty-state">Cargando…</div>
+          ) : workerRows.length === 0 ? (
+            <div className="empty-state">Sin técnicos registrados.</div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={tableHead}>Técnico</th>
+                  <th style={{ ...tableHead, textAlign: "right" }}>Órdenes activas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workerRows.map((row) => (
+                  <tr key={row.id}>
+                    <td style={tableCell}>{row.name}</td>
+                    <td style={{ ...tableCell, textAlign: "right" }}>
+                      <span className={`pill ${row.active > 0 ? "pill-blue" : "pill-muted"}`}>
+                        {row.active}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
-      <div className="db-grid-2">
-        <div className="db-card">
-          <div className="db-card-header">
-            <h3 className="db-card-title">Estado del sistema</h3>
-            <span className="pill pill-success db-pill-sm">Activo</span>
-          </div>
-          <div className="db-card-body">
-            {statusRows.map((row) => (
-              <div key={row.label} className="db-row">
-                <div className={`db-row-dot ${row.dot}`} />
-                <div className="db-row-body">
-                  <p>{row.label}</p>
-                  <span>{row.sub}</span>
-                </div>
-                <span className={`db-row-tag pill ${row.pill}`}>{row.tag}</span>
-              </div>
-            ))}
-          </div>
+      {/* ── Últimas órdenes ── */}
+      <div className="db-card">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Últimas órdenes</h3>
+          <span className="pill pill-muted db-pill-sm">10 recientes</span>
         </div>
-
-        <div className="db-card">
-          <div className="db-card-header">
-            <h3 className="db-card-title">Guía rápida</h3>
-          </div>
-          <div className="db-card-body">
-            {guideRows.map((row) => (
-              <div key={row.label} className="db-row">
-                <div className={`db-row-dot ${row.dot}`} />
-                <div className="db-row-body">
-                  <p>{row.label}</p>
-                  <span>{row.sub}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="db-card-body">
+          {loading ? (
+            <div className="empty-state">Cargando…</div>
+          ) : lastOrders.length === 0 ? (
+            <div className="empty-state">No hay órdenes registradas.</div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={tableHead}>OT</th>
+                  <th style={tableHead}>Cliente</th>
+                  <th style={tableHead}>Equipo</th>
+                  <th style={tableHead}>Estado</th>
+                  <th style={tableHead}>Técnico</th>
+                  <th style={tableHead} />
+                </tr>
+              </thead>
+              <tbody>
+                {lastOrders.map((wo) => (
+                  <tr key={wo.id}>
+                    <td style={tableCell}>#{wo.id}</td>
+                    <td style={tableCell}>{wo.device?.client?.name ?? "—"}</td>
+                    <td style={tableCell}>
+                      {wo.device ? `${wo.device.brand} ${wo.device.model}` : "—"}
+                    </td>
+                    <td style={tableCell}>
+                      <span className={`pill ${statusPill[wo.status]}`}>
+                        {WORK_ORDER_STATUS_LABELS[wo.status]}
+                      </span>
+                    </td>
+                    <td style={tableCell}>{wo.worker?.name ?? "—"}</td>
+                    <td style={{ ...tableCell, textAlign: "right" }}>
+                      <button
+                        className="button button-secondary button-small"
+                        onClick={() => navigate(`/work-orders/${wo.id}`)}
+                        type="button"
+                      >
+                        Ver detalle
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>

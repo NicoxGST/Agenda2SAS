@@ -3,8 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import type { WorkOrderDetail, WorkOrderHistoryEntry, WorkOrderStatus } from "../../types";
 import { WORK_ORDER_STATUS_LABELS } from "../../types";
+import type { Worker } from "../../types";
 import { getWorkOrderDetail, getWorkOrderHistory, updateWorkOrderStatus, updateWorkOrder } from "../../services/work-orders.service";
 import { createDevicePhoto, deleteDevicePhoto, resolvePhotoUrl, updateDevicePhoto, uploadDevicePhoto } from "../../services/devices.service";
+import { getWorkers } from "../../services/availability.service";
+import { ROLES } from "../../constants/roles";
+import { useAuth } from "../../store/auth.store";
 
 const statusPill: Record<WorkOrderStatus, string> = {
   RECEIVED:      "pill-blue",
@@ -49,12 +53,20 @@ const subsectionStyle: React.CSSProperties = {
 export function WorkOrderDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const auth = useAuth();
+  const user = auth.user;
+  const canReassign = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN;
 
   const [workOrder, setWorkOrder]           = useState<WorkOrderDetail | null>(null);
   const [history, setHistory]               = useState<WorkOrderHistoryEntry[]>([]);
   const [error, setError]                   = useState("");
   const [loading, setLoading]               = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
+
+  const [workers, setWorkers]               = useState<Worker[]>([]);
+  const [reassignWorkerId, setReassignWorkerId] = useState("");
+  const [savingReassign, setSavingReassign] = useState(false);
+  const [reassignError, setReassignError]   = useState("");
 
   type PhotoEntry = { id: number; url: string; description?: string | null; createdAt: string };
   const [photos, setPhotos]               = useState<PhotoEntry[]>([]);
@@ -86,6 +98,7 @@ export function WorkOrderDetailsPage() {
           setHistory(hist);
           setPhotos(data.device?.photos ?? []);
           setLaborCostInput(String(data.laborCost));
+          setReassignWorkerId(String(data.workerId));
         }
       } catch (err: unknown) {
         if (!ignore) setError(getErrorMessage(err));
@@ -97,6 +110,31 @@ export function WorkOrderDetailsPage() {
     void load();
     return () => { ignore = true; };
   }, [id]);
+
+  useEffect(() => {
+    if (!canReassign) return;
+    let ignore = false;
+    getWorkers()
+      .then((data) => { if (!ignore) setWorkers(data); })
+      .catch(() => {});
+    return () => { ignore = true; };
+  }, [canReassign]);
+
+  async function handleReassign() {
+    if (!workOrder || !reassignWorkerId) return;
+    const newId = Number(reassignWorkerId);
+    if (newId === workOrder.workerId) return;
+    try {
+      setSavingReassign(true);
+      setReassignError("");
+      await updateWorkOrder(workOrder.id, { workerId: newId });
+      setWorkOrder((prev) => prev ? { ...prev, workerId: newId } : prev);
+    } catch (err: unknown) {
+      setReassignError(getErrorMessage(err));
+    } finally {
+      setSavingReassign(false);
+    }
+  }
 
   async function handleSaveLaborCost() {
     if (!workOrder) return;
@@ -459,6 +497,42 @@ export function WorkOrderDetailsPage() {
                 {laborCostError}
               </p>
             )}
+
+            {canReassign && workers.length > 0 && (
+              <p>
+                <strong>Técnico asignado</strong>
+                <span style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                  <select
+                    style={{ minWidth: "10rem" }}
+                    value={reassignWorkerId}
+                    onChange={(e) => setReassignWorkerId(e.target.value)}
+                  >
+                    <option value="">Seleccionar</option>
+                    {workers.map((w) => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="button button-secondary button-small"
+                    disabled={
+                      savingReassign ||
+                      !reassignWorkerId ||
+                      Number(reassignWorkerId) === workOrder.workerId
+                    }
+                    onClick={handleReassign}
+                    type="button"
+                  >
+                    {savingReassign ? "Guardando…" : "Reasignar"}
+                  </button>
+                </span>
+              </p>
+            )}
+            {reassignError && (
+              <p className="alert alert-error" style={{ gridColumn: "1 / -1", marginTop: "0.25rem" }}>
+                {reassignError}
+              </p>
+            )}
+
             <p>
               <strong>Creado</strong>
               <span>{formatDateTime(workOrder.createdAt)}</span>

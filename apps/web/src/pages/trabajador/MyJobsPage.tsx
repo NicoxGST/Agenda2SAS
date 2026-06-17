@@ -6,6 +6,7 @@ import { useAuth } from "../../store/auth.store";
 import type { WorkOrder, WorkOrderStatus } from "../../types";
 import { WORK_ORDER_STATUS_LABELS } from "../../types";
 import { getWorkOrders } from "../../services/work-orders.service";
+import { WorkOrdersPage } from "../ordenes/WorkOrdersPage";
 
 const statusPill: Record<WorkOrderStatus, string> = {
   RECEIVED:      "pill-blue",
@@ -38,10 +39,11 @@ function formatDate(value: string) {
 }
 
 export function MyJobsPage() {
-  const auth = useAuth();
-  const user = auth.user;
-  const isWorker = user?.role === ROLES.WORKER;
-  const navigate = useNavigate();
+  const auth      = useAuth();
+  const user      = auth.user;
+  const isWorker  = user?.role === ROLES.WORKER;
+  const isManager = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN;
+  const navigate  = useNavigate();
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
@@ -79,6 +81,10 @@ export function MyJobsPage() {
     () => activeFilter === "ALL" ? workOrders : workOrders.filter((wo) => wo.status === activeFilter),
     [workOrders, activeFilter],
   );
+
+  if (isManager) {
+    return <WorkOrdersPage />;
+  }
 
   if (!isWorker) {
     return (

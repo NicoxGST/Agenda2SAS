@@ -11,8 +11,23 @@ function authHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${auth.accessToken}` };
 }
 
-export function getWorkOrders(): Promise<WorkOrder[]> {
-  return apiFetch("/work-orders", { headers: authHeaders() });
+export type WorkOrderFilters = {
+  status?: string;
+  workerId?: number;
+  clientId?: number;
+  from?: string;
+  to?: string;
+};
+
+export function getWorkOrders(filters?: WorkOrderFilters): Promise<WorkOrder[]> {
+  const qs = new URLSearchParams();
+  if (filters?.status)   qs.set("status",   filters.status);
+  if (filters?.workerId) qs.set("workerId", String(filters.workerId));
+  if (filters?.clientId) qs.set("clientId", String(filters.clientId));
+  if (filters?.from)     qs.set("from",     filters.from);
+  if (filters?.to)       qs.set("to",       filters.to);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return apiFetch(`/work-orders${query}`, { headers: authHeaders() });
 }
 
 export function getWorkOrderDetail(id: number): Promise<WorkOrderDetail> {

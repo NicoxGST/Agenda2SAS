@@ -7,6 +7,7 @@ import type { Reservation, ReservationStatus } from "../../types";
 import { RESERVATION_STATUS_LABELS } from "../../types";
 import {
   attendReservation,
+  getAllReservations,
   getWorkerReservations,
   updateReservation,
   updateReservationStatus,
@@ -58,10 +59,11 @@ function getErrorMessage(error: unknown) {
 }
 
 export function WorkerReservationsPage() {
-  const auth     = useAuth();
-  const user     = auth.user;
-  const isWorker = user?.role === ROLES.WORKER;
-  const navigate = useNavigate();
+  const auth      = useAuth();
+  const user      = auth.user;
+  const isWorker  = user?.role === ROLES.WORKER;
+  const isManager = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN;
+  const navigate  = useNavigate();
 
   const [reservations, setReservations] = useState<WorkerReservation[]>([]);
   const [error, setError]               = useState("");
@@ -82,13 +84,16 @@ export function WorkerReservationsPage() {
   const [receptionError, setReceptionError] = useState("");
 
   useEffect(() => {
-    if (!isWorker) return;
+    if (!isWorker && !isManager) return;
     let ignore = false;
 
     async function load() {
       try {
         setError("");
-        const data = (await getWorkerReservations()) as WorkerReservation[];
+        const data = (await (isWorker
+          ? getWorkerReservations()
+          : getAllReservations()
+        )) as WorkerReservation[];
         if (!ignore) setReservations(data);
       } catch (err: unknown) {
         if (!ignore) setError(getErrorMessage(err));
@@ -99,7 +104,7 @@ export function WorkerReservationsPage() {
 
     void load();
     return () => { ignore = true; };
-  }, [isWorker]);
+  }, [isWorker, isManager]);
 
   const active = useMemo(
     () => reservations.filter((r) => r.status === "PENDING" || r.status === "CONFIRMED"),
@@ -205,8 +210,91 @@ export function WorkerReservationsPage() {
     }
   }
 
-  if (!isWorker) {
-    return <div className="empty-state">Esta vista solo está disponible para trabajadores.</div>;
+  if (!isWorker && !isManager) {
+    return <div className="empty-state">Esta vista no está disponible para tu rol.</div>;
+  }
+
+  if (isManager) {
+    return (
+      <>
+        <div className="db-welcome">
+          <span className="db-welcome-tag">Panel administrador</span>
+          <h2>Reservas del sistema</h2>
+          <p>Gestiona y supervisa todas las reservas del taller.</p>
+        </div>
+
+        {error && <p className="alert alert-error">{error}</p>}
+
+        <div className="db-card db-card-mb">
+          <div className="db-card-header">
+            <h3 className="db-card-title">Reservas activas</h3>
+            <span className="pill pill-muted db-pill-sm">
+              {loading ? "…" : `${active.length} reserva${active.length !== 1 ? "s" : ""}`}
+            </span>
+          </div>
+          <div className="db-card-body">
+            {loading && <div className="empty-state">Cargando reservas...</div>}
+            {!loading && active.length === 0 && (
+              <div className="empty-state">Sin reservas activas.</div>
+            )}
+            <div className="list">
+              {active.map((r) => (
+                <ReservationCard
+                  key={r.id}
+                  reservation={r}
+                  actionId={actionId}
+                  editingId={editingId}
+                  editForm={editForm}
+                  receptingId={receptingId}
+                  receptionForm={receptionForm}
+                  receptionError={receptionError}
+                  showWorker
+                  onEditFormChange={updateEditForm}
+                  onReceptionFormChange={updateReceptionForm}
+                  onStatus={handleStatus}
+                  onStartEdit={startEdit}
+                  onCancelEdit={() => setEditingId(null)}
+                  onSaveEdit={handleSaveEdit}
+                  onOpenReception={openReception}
+                  onCancelReception={() => setReceptingId(null)}
+                  onAttend={handleAttend}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {!loading && closed.length > 0 && (
+          <div className="db-card db-card-mb">
+            <div className="db-card-header">
+              <h3 className="db-card-title">Historial de reservas</h3>
+              <span className="pill pill-muted db-pill-sm">{closed.length}</span>
+            </div>
+            <div className="db-card-body">
+              <div className="list">
+                {closed.map((r) => (
+                  <article className="item-row" key={r.id}>
+                    <div className="item-main">
+                      <h3 className="item-title">#{r.id} — {r.client?.name ?? "Cliente"}</h3>
+                      <p className="item-description">
+                        {r.service?.name ?? "Servicio"} · {r.worker?.name ?? "Sin técnico"}
+                      </p>
+                      <p className="item-meta">{formatDateTime(r.scheduledAt)}</p>
+                    </div>
+                    <div className="item-metrics">
+                      <span className={`pill ${statusPill[r.status]}`}>
+                        {RESERVATION_STATUS_LABELS[r.status]}
+                      </span>
+                    </div>
+                    <div />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   return (
@@ -302,6 +390,7 @@ type ReservationCardProps = {
   receptingId: number | null;
   receptionForm: ReceptionFormState;
   receptionError: string;
+  showWorker?: boolean;
   onEditFormChange: (key: keyof EditFormState, value: string) => void;
   onReceptionFormChange: (key: keyof ReceptionFormState, value: string) => void;
   onStatus: (id: number, status: ReservationStatus) => Promise<void>;
@@ -321,6 +410,7 @@ function ReservationCard({
   receptingId,
   receptionForm,
   receptionError,
+  showWorker,
   onEditFormChange,
   onReceptionFormChange,
   onStatus,
@@ -343,6 +433,9 @@ function ReservationCard({
             Reserva #{r.id} — {r.client?.name ?? "Cliente"}
           </h3>
           <p className="item-description">{r.service?.name ?? "Servicio"}</p>
+          {showWorker && r.worker?.name && (
+            <p className="item-meta">Técnico: {r.worker.name}</p>
+          )}
           <p className="item-meta">
             {formatDateTime(r.scheduledAt)}
             {r.contactPhone ? ` · ${r.contactPhone}` : ""}

@@ -33,6 +33,10 @@ export function getWorkerReservations(): Promise<Reservation[]> {
   return apiFetch("/reservations/worker/my", { headers: authHeaders() });
 }
 
+export function getAllReservations(): Promise<Reservation[]> {
+  return apiFetch("/reservations", { headers: authHeaders() });
+}
+
 export function createReservation(data: ReservationPayload): Promise<Reservation> {
   return apiFetch("/reservations", {
     method: "POST",
