@@ -133,6 +133,10 @@ export function AdminDashboard() {
   );
 
   // ── Órdenes de trabajo KPIs ────────────────────────
+  const ordenesActivas = useMemo(
+    () => workOrders.filter((wo) => ACTIVE.has(wo.status)).length,
+    [workOrders],
+  );
   const enProceso = useMemo(
     () => workOrders.filter((wo) => IN_PROCESS.has(wo.status)).length,
     [workOrders],
@@ -196,9 +200,10 @@ export function AdminDashboard() {
       {/* ── Órdenes de trabajo ── */}
       <span style={sectionLabel}>Órdenes de trabajo</span>
       <div className="db-stats" style={{ marginBottom: "0.5rem" }}>
-        <KpiCard label="En proceso"           value={enProceso}     iconClass="db-stat-icon-blue"   icon="🔧" loading={loading} />
-        <KpiCard label="Listas para entrega"  value={listas}        iconClass="db-stat-icon-green"  icon="📦" loading={loading} />
-        <KpiCard label="Entregadas este mes"  value={entregadasMes} iconClass="db-stat-icon-purple" icon="🚀" loading={loading} />
+        <KpiCard label="Órdenes activas"      value={ordenesActivas} iconClass="db-stat-icon-red"    icon="📋" loading={loading} />
+        <KpiCard label="En proceso"           value={enProceso}      iconClass="db-stat-icon-blue"   icon="🔧" loading={loading} />
+        <KpiCard label="Listas para entrega"  value={listas}         iconClass="db-stat-icon-green"  icon="📦" loading={loading} />
+        <KpiCard label="Entregadas este mes"  value={entregadasMes}  iconClass="db-stat-icon-purple" icon="🚀" loading={loading} />
       </div>
 
       {/* ── Indicadores económicos ── */}
