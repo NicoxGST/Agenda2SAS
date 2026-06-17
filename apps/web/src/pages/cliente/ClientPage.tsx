@@ -14,8 +14,6 @@ export function ClientPage() {
     reservations,
     devices,
     reservationForm,
-    deviceForm,
-    photoForm,
     expandedDeviceId,
     error,
     success,
@@ -23,11 +21,7 @@ export function ClientPage() {
     selectedWorker,
     setExpandedDeviceId,
     updateReservationForm,
-    updateDeviceForm,
-    updatePhotoForm,
     handleCreateReservation,
-    handleCreateDevice,
-    handleCreatePhoto,
     handleDevicePhotoAdded,
     handleDevicePhotoDeleted,
   } = useClientData();
@@ -43,22 +37,15 @@ export function ClientPage() {
       </div>
 
       <NuevaAtencionSection
-        devices={devices}
-        deviceForm={deviceForm}
         error={error}
         loading={loading}
-        photoForm={photoForm}
         reservationForm={reservationForm}
         selectedWorker={selectedWorker}
         services={services}
         slots={slots}
         success={success}
         workers={workers}
-        onCreateDevice={handleCreateDevice}
-        onCreatePhoto={handleCreatePhoto}
         onCreateReservation={handleCreateReservation}
-        onDeviceFormChange={updateDeviceForm}
-        onPhotoFormChange={updatePhotoForm}
         onReservationFormChange={updateReservationForm}
       />
 

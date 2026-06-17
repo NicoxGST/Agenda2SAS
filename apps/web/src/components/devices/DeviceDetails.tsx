@@ -4,6 +4,9 @@ import {
   createDevicePhoto,
   deleteDevicePhoto,
   getDeviceDetails,
+  resolvePhotoUrl,
+  updateDevicePhoto,
+  uploadDevicePhoto,
 } from "../../services/devices.service";
 import type {
   DeviceDetailsData,
@@ -18,6 +21,7 @@ import {
 
 type DeviceDetailsProps = {
   deviceId: number;
+  readOnly?: boolean;
   onPhotoAdded?: (deviceId: number, photo: DevicePhoto) => void;
   onPhotoDeleted?: (deviceId: number, photoId: number) => void;
 };
@@ -104,14 +108,20 @@ function buildTimeline(details: DeviceDetailsData): TimelineItem[] {
 
 export function DeviceDetails({
   deviceId,
+  readOnly = false,
   onPhotoAdded,
   onPhotoDeleted,
 }: DeviceDetailsProps) {
   const [details, setDetails] = useState<DeviceDetailsData | null>(null);
   const [photoForm, setPhotoForm] = useState<PhotoFormState>(emptyPhotoForm);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingPhoto, setSavingPhoto] = useState(false);
   const [error, setError] = useState("");
+  const [editPhotoId, setEditPhotoId] = useState<number | null>(null);
+  const [editPhotoForm, setEditPhotoForm] = useState<PhotoFormState>(emptyPhotoForm);
+  const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
+  const [savingEditPhoto, setSavingEditPhoto] = useState(false);
 
   const timeline = useMemo(() => {
     return details ? buildTimeline(details) : [];
@@ -160,16 +170,15 @@ export function DeviceDetails({
       setSavingPhoto(true);
       setError("");
 
-      const payload = {
-        url: photoForm.url.trim(),
-        description: photoForm.description.trim() || undefined,
-      };
-
-      if (!payload.url) {
-        throw new Error("Ingresa la URL de la foto");
+      if (!photoFile) {
+        throw new Error("Selecciona una foto");
       }
 
-      const created = await createDevicePhoto(deviceId, payload);
+      const { url } = await uploadDevicePhoto(photoFile);
+      const created = await createDevicePhoto(deviceId, {
+        url,
+        description: photoForm.description.trim() || undefined,
+      });
 
       setDetails((prev) =>
         prev
@@ -180,6 +189,7 @@ export function DeviceDetails({
           : prev,
       );
       setPhotoForm(emptyPhotoForm);
+      setPhotoFile(null);
       onPhotoAdded?.(deviceId, created);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -205,6 +215,45 @@ export function DeviceDetails({
       onPhotoDeleted?.(deviceId, photoId);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
+    }
+  }
+
+  function startEditPhoto(photo: DevicePhoto) {
+    setEditPhotoId(photo.id);
+    setEditPhotoForm({ url: photo.url, description: photo.description ?? "" });
+    setEditPhotoFile(null);
+  }
+
+  async function handleUpdatePhoto(photoId: number) {
+    try {
+      setSavingEditPhoto(true);
+      setError("");
+
+      let url: string | undefined;
+      if (editPhotoFile) {
+        const result = await uploadDevicePhoto(editPhotoFile);
+        url = result.url;
+      }
+
+      const updated = await updateDevicePhoto(photoId, {
+        url,
+        description: editPhotoForm.description.trim() || undefined,
+      });
+
+      setDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              photos: prev.photos.map((p) => (p.id === photoId ? { ...p, ...updated } : p)),
+            }
+          : prev,
+      );
+      setEditPhotoId(null);
+      setEditPhotoFile(null);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSavingEditPhoto(false);
     }
   }
 
@@ -268,36 +317,38 @@ export function DeviceDetails({
 
       <section className="device-details-section">
         <h3>Fotos</h3>
-        <div className="form-grid">
-          <label className="field">
-            <span>URL</span>
-            <input
-              placeholder="https://..."
-              value={photoForm.url}
-              onChange={(e) => updatePhotoForm("url", e.target.value)}
-            />
-          </label>
+        {!readOnly && (
+          <div className="form-grid">
+            <label className="field">
+              <span>Foto</span>
+              <input
+                accept="image/*"
+                type="file"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
 
-          <label className="field">
-            <span>Descripcion</span>
-            <input
-              placeholder="Pantalla rota"
-              value={photoForm.description}
-              onChange={(e) => updatePhotoForm("description", e.target.value)}
-            />
-          </label>
+            <label className="field">
+              <span>Descripcion</span>
+              <input
+                placeholder="Pantalla rota"
+                value={photoForm.description}
+                onChange={(e) => updatePhotoForm("description", e.target.value)}
+              />
+            </label>
 
-          <div className="actions">
-            <button
-              className="button button-secondary"
-              disabled={savingPhoto}
-              onClick={handleCreatePhoto}
-              type="button"
-            >
-              Agregar foto
-            </button>
+            <div className="actions">
+              <button
+                className="button button-secondary"
+                disabled={savingPhoto || !photoFile}
+                onClick={handleCreatePhoto}
+                type="button"
+              >
+                {savingPhoto ? "Subiendo..." : "Agregar foto"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {error && <p className="alert alert-error">{error}</p>}
 
@@ -309,19 +360,72 @@ export function DeviceDetails({
           <div className="device-photo-grid section">
             {details.photos.map((photo) => (
               <figure className="device-photo" key={photo.id}>
-                <a href={photo.url} target="_blank" rel="noreferrer">
-                  <img src={photo.url} alt={photo.description || "Foto"} />
-                </a>
-                <figcaption>
-                  <span>{photo.description || "Foto"}</span>
-                  <button
-                    className="button button-danger button-small"
-                    onClick={() => handleDeletePhoto(photo.id)}
-                    type="button"
-                  >
-                    Eliminar
-                  </button>
-                </figcaption>
+                {!readOnly && editPhotoId === photo.id ? (
+                  <div className="form-grid" style={{ padding: "0.5rem" }}>
+                    <label className="field">
+                      <span>Nueva foto (opcional)</span>
+                      <input
+                        accept="image/*"
+                        type="file"
+                        onChange={(e) => setEditPhotoFile(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Descripción</span>
+                      <input
+                        placeholder="Pantalla rota"
+                        value={editPhotoForm.description}
+                        onChange={(e) =>
+                          setEditPhotoForm((prev) => ({ ...prev, description: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <div className="actions">
+                      <button
+                        className="button button-primary button-small"
+                        disabled={savingEditPhoto}
+                        onClick={() => handleUpdatePhoto(photo.id)}
+                        type="button"
+                      >
+                        {savingEditPhoto ? "Guardando..." : "Guardar"}
+                      </button>
+                      <button
+                        className="button button-secondary button-small"
+                        onClick={() => setEditPhotoId(null)}
+                        type="button"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <a href={resolvePhotoUrl(photo.url)} target="_blank" rel="noreferrer">
+                      <img src={resolvePhotoUrl(photo.url)} alt={photo.description || "Foto"} />
+                    </a>
+                    <figcaption>
+                      <span>{photo.description || "Foto"}</span>
+                      {!readOnly && (
+                        <>
+                          <button
+                            className="button button-secondary button-small"
+                            onClick={() => startEditPhoto(photo)}
+                            type="button"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="button button-danger button-small"
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            type="button"
+                          >
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </figcaption>
+                  </>
+                )}
               </figure>
             ))}
           </div>

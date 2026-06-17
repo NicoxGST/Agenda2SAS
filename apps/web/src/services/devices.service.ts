@@ -16,6 +16,28 @@ export type {
   DeviceDetailsData,
 };
 
+const API_BASE = 'http://localhost:3000';
+
+export function resolvePhotoUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE}${url}`;
+}
+
+export function uploadDevicePhoto(file: File): Promise<{ url: string }> {
+  const auth = getAuth();
+  const formData = new FormData();
+  formData.append('file', file);
+  return fetch(`${API_BASE}/uploads/device-photos`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${auth.accessToken}` },
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.message || 'Upload failed');
+    return data;
+  });
+}
+
 function authHeaders() {
   const auth = getAuth();
   return { Authorization: `Bearer ${auth.accessToken}` };
@@ -71,6 +93,17 @@ export function createDevicePhoto(
 ): Promise<DevicePhoto> {
   return apiFetch(`/devices/${deviceId}/photos`, {
     method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateDevicePhoto(
+  id: number,
+  data: Partial<DevicePhotoPayload>,
+): Promise<DevicePhoto> {
+  return apiFetch(`/device-photos/${id}`, {
+    method: "PATCH",
     headers: authHeaders(),
     body: JSON.stringify(data),
   });

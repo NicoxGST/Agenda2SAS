@@ -115,6 +115,7 @@ function RepairCard({
           <div className="section">
             <DeviceDetails
               deviceId={device.id}
+              readOnly
               onPhotoAdded={onPhotoAdded}
               onPhotoDeleted={onPhotoDeleted}
             />
@@ -134,6 +135,11 @@ type Props = {
   onPhotoDeleted: (deviceId: number, photoId: number) => void;
 };
 
+const reservationPill: Record<string, string> = {
+  PENDING:   "pill-orange",
+  CONFIRMED: "pill-success",
+};
+
 export function MisReparacionesSection({
   devices,
   reservations,
@@ -142,10 +148,55 @@ export function MisReparacionesSection({
   onPhotoAdded,
   onPhotoDeleted,
 }: Props) {
+  const upcomingReservations = reservations.filter(
+    (r) => r.status === "PENDING" || r.status === "CONFIRMED",
+  );
+
   return (
     <>
+      {/* ── Próximas Atenciones ── */}
+      <div className="db-card db-card-mb">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Próximas Atenciones</h3>
+          {upcomingReservations.length > 0 && (
+            <span className="pill pill-muted db-pill-sm">
+              {upcomingReservations.length} reserva
+              {upcomingReservations.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <div className="db-card-body">
+          {upcomingReservations.length === 0 ? (
+            <div className="empty-state" style={{ marginTop: 0 }}>
+              No tienes atenciones próximas agendadas.
+            </div>
+          ) : (
+            <div className="compact-list">
+              {upcomingReservations.map((r) => (
+                <div className="compact-row" key={r.id}>
+                  <div>
+                    <strong>{r.service?.name ?? "Servicio"}</strong>
+                    <span>
+                      Con {r.worker?.name ?? "Técnico"} —{" "}
+                      {formatDateTime(r.scheduledAt)}
+                    </span>
+                    {r.contactPhone && (
+                      <span className="item-meta">{r.contactPhone}</span>
+                    )}
+                  </div>
+                  <span className={`pill ${reservationPill[r.status] ?? "pill-muted"}`}>
+                    {RESERVATION_STATUS_LABELS[r.status]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Reparaciones ── */}
       <div className="db-card-header db-card-mb">
-        <h3 className="db-card-title">Mis reparaciones</h3>
+        <h3 className="db-card-title">Reparaciones</h3>
         <span className="pill pill-muted db-pill-sm">
           {devices.length} equipo{devices.length !== 1 ? "s" : ""}
         </span>
@@ -170,38 +221,6 @@ export function MisReparacionesSection({
           onPhotoDeleted={onPhotoDeleted}
         />
       ))}
-
-      {reservations.length > 0 && (
-        <div className="db-card">
-          <div className="db-card-header">
-            <h3 className="db-card-title">Mis reservas</h3>
-            <span className="pill pill-muted db-pill-sm">
-              {reservations.length} reserva{reservations.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className="db-card-body">
-            <div className="compact-list">
-              {reservations.map((r) => (
-                <div className="compact-row" key={r.id}>
-                  <div>
-                    <strong>{r.service?.name ?? "Servicio"}</strong>
-                    <span>
-                      Con {r.worker?.name ?? "Técnico"} —{" "}
-                      {formatDateTime(r.scheduledAt)}
-                    </span>
-                    {r.contactPhone && (
-                      <span className="item-meta">{r.contactPhone}</span>
-                    )}
-                  </div>
-                  <span className="pill pill-blue">
-                    {RESERVATION_STATUS_LABELS[r.status]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

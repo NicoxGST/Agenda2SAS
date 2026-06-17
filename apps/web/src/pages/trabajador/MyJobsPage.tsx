@@ -1,52 +1,50 @@
-/**
- * PROPUESTA TÉCNICA: "Mis Trabajos"
- *
- * Vista unificada para el WORKER que integra:
- *   Reserva → Cliente → Equipos → Orden de trabajo → Estado
- *
- * PREREQUISITOS para activación completa:
- *   1. Backend: GET /reservations/worker/my debe incluir workOrders con device
- *      embebidos en la respuesta (actualmente no los incluye).
- *   2. Backend: Eliminar @unique de WorkOrder.reservationId para permitir
- *      múltiples órdenes por visita (migración Prisma requerida).
- *   3. Opcional: tabla ReservationDevice para asociar equipos explícitamente
- *      a una visita antes de crear la orden.
- *
- * ENDPOINT esperado (futuro):
- *   GET /reservations/worker/my
- *   Response: Reservation & {
- *     client: { id, name, email, phone }
- *     service: { id, name }
- *     workOrders: Array<{
- *       id, status, problemDescription, diagnosis, laborCost
- *       device: { id, brand, model, deviceType }
- *     }>
- *   }
- */
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { ROLES } from "../../constants/roles";
 import { useAuth } from "../../store/auth.store";
-import type { Reservation } from "../../types";
-import { RESERVATION_STATUS_LABELS, WORK_ORDER_STATUS_LABELS } from "../../types";
-import { getWorkerReservations } from "../../services/reservations.service";
+import type { WorkOrder, WorkOrderStatus } from "../../types";
+import { WORK_ORDER_STATUS_LABELS } from "../../types";
+import { getWorkOrders } from "../../services/work-orders.service";
 
-function formatDateTime(value: string) {
-  return `${value.slice(0, 10)} ${value.slice(11, 16)}`;
-}
+const statusPill: Record<WorkOrderStatus, string> = {
+  RECEIVED:      "pill-blue",
+  DIAGNOSIS:     "pill-orange",
+  WAITING_PARTS: "pill-orange",
+  IN_REPAIR:     "pill-blue",
+  READY:         "pill-success",
+  DELIVERED:     "pill-success",
+  CANCELLED:     "pill-muted",
+};
+
+type FilterTab = "ALL" | WorkOrderStatus;
+
+const FILTER_TABS: { key: FilterTab; label: string }[] = [
+  { key: "ALL",           label: "Todas" },
+  { key: "DIAGNOSIS",     label: "Diagnóstico" },
+  { key: "WAITING_PARTS", label: "Esperando piezas" },
+  { key: "IN_REPAIR",     label: "En reparación" },
+  { key: "READY",         label: "Listas" },
+  { key: "DELIVERED",     label: "Entregadas" },
+];
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   return "Ocurrió un error";
 }
 
+function formatDate(value: string) {
+  return value.slice(0, 10);
+}
+
 export function MyJobsPage() {
   const auth = useAuth();
   const user = auth.user;
   const isWorker = user?.role === ROLES.WORKER;
+  const navigate = useNavigate();
 
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -57,8 +55,8 @@ export function MyJobsPage() {
     async function loadJobs() {
       try {
         setError("");
-        const data = await getWorkerReservations();
-        if (!ignore) setReservations(data);
+        const data = await getWorkOrders();
+        if (!ignore) setWorkOrders(data);
       } catch (err: unknown) {
         if (!ignore) setError(getErrorMessage(err));
       } finally {
@@ -69,6 +67,18 @@ export function MyJobsPage() {
     void loadJobs();
     return () => { ignore = true; };
   }, [isWorker]);
+
+  const summary = useMemo(() => ({
+    active:       workOrders.filter((wo) => !["DELIVERED", "CANCELLED"].includes(wo.status)).length,
+    waitingParts: workOrders.filter((wo) => wo.status === "WAITING_PARTS").length,
+    inRepair:     workOrders.filter((wo) => wo.status === "IN_REPAIR").length,
+    ready:        workOrders.filter((wo) => wo.status === "READY").length,
+  }), [workOrders]);
+
+  const filtered = useMemo(
+    () => activeFilter === "ALL" ? workOrders : workOrders.filter((wo) => wo.status === activeFilter),
+    [workOrders, activeFilter],
+  );
 
   if (!isWorker) {
     return (
@@ -83,93 +93,121 @@ export function MyJobsPage() {
       <div className="db-welcome">
         <span className="db-welcome-tag">Panel trabajador</span>
         <h2>Mis trabajos</h2>
-        <p>
-          Vista unificada de reservas, clientes y órdenes de trabajo asignadas.
-        </p>
+        <p>Centro operativo de órdenes de trabajo asignadas.</p>
       </div>
 
       {error && <p className="alert alert-error">{error}</p>}
 
-      {loading && (
-        <div className="empty-state">Cargando trabajos...</div>
+      {/* ── Resumen ── */}
+      {!loading && (
+        <div className="db-stats">
+          <div className="db-stat">
+            <div className="db-stat-icon db-stat-icon-blue">🔧</div>
+            <div>
+              <p className="db-stat-value">{summary.active}</p>
+              <p className="db-stat-label">Órdenes activas</p>
+            </div>
+          </div>
+          <div className="db-stat">
+            <div className="db-stat-icon db-stat-icon-orange">📦</div>
+            <div>
+              <p className="db-stat-value">{summary.waitingParts}</p>
+              <p className="db-stat-label">Esperando piezas</p>
+            </div>
+          </div>
+          <div className="db-stat">
+            <div className="db-stat-icon db-stat-icon-purple">⚙️</div>
+            <div>
+              <p className="db-stat-value">{summary.inRepair}</p>
+              <p className="db-stat-label">En reparación</p>
+            </div>
+          </div>
+          <div className="db-stat">
+            <div className="db-stat-icon db-stat-icon-green">✅</div>
+            <div>
+              <p className="db-stat-value">{summary.ready}</p>
+              <p className="db-stat-label">Listas para entrega</p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {!loading && reservations.length === 0 && (
-        <div className="empty-state">No tienes trabajos asignados.</div>
-      )}
+      {/* ── Filtros ── */}
+      <div className="db-card db-card-mb">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Órdenes de trabajo</h3>
+          <span className="pill pill-muted db-pill-sm">
+            {filtered.length} orden{filtered.length === 1 ? "" : "es"}
+          </span>
+        </div>
+        <div className="db-card-body">
+          <div className="slot-grid" style={{ marginBottom: "1rem" }}>
+            {FILTER_TABS.map(({ key, label }) => (
+              <button
+                className={`button button-small ${activeFilter === key ? "button-primary" : "button-secondary"}`}
+                key={key}
+                onClick={() => setActiveFilter(key)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-      <div className="list">
-        {reservations.map((reservation) => (
-          <JobCard key={reservation.id} reservation={reservation} />
-        ))}
+          {loading && <div className="empty-state">Cargando trabajos...</div>}
+
+          {!loading && filtered.length === 0 && (
+            <div className="empty-state">No hay órdenes para este filtro.</div>
+          )}
+
+          <div className="list">
+            {filtered.map((wo) => (
+              <WorkOrderCard
+                key={wo.id}
+                workOrder={wo}
+                onClick={() => navigate(`/work-orders/${wo.id}`)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-
-      {/*
-        TODO Sprint siguiente: cuando el backend devuelva workOrders embebidas en
-        la reserva, reemplazar JobCard por una versión que muestre:
-          - Cada equipo asociado a esta visita
-          - El estado de la orden de trabajo por equipo
-          - Botón "Crear orden" para equipos sin orden todavía
-      */}
     </>
   );
 }
 
-type JobCardProps = {
-  reservation: Reservation;
+type WorkOrderCardProps = {
+  workOrder: WorkOrder;
+  onClick: () => void;
 };
 
-function JobCard({ reservation }: JobCardProps) {
+export function WorkOrderCard({ workOrder, onClick }: WorkOrderCardProps) {
+  const clientName  = workOrder.device?.client?.name ?? "Cliente";
+  const deviceLabel = workOrder.device
+    ? `${workOrder.device.brand} ${workOrder.device.model}`
+    : "Equipo sin registrar";
+
   return (
-    <article className="db-card db-card-mb">
-      <div className="db-card-header">
-        <div>
-          <h3 className="db-card-title">
-            Reserva #{reservation.id} — {reservation.client?.name ?? "Cliente"}
-          </h3>
-          <p className="item-description">
-            {reservation.service?.name} · {formatDateTime(reservation.scheduledAt)}
-          </p>
-        </div>
-        <span className="pill pill-blue">
-          {RESERVATION_STATUS_LABELS[reservation.status]}
+    <article className="item-row item-row-wide" key={workOrder.id}>
+      <div className="item-main">
+        <h3 className="item-title">OT #{workOrder.id} — {clientName}</h3>
+        <p className="item-description">{deviceLabel}</p>
+        <p className="item-meta">{formatDate(workOrder.createdAt)}</p>
+      </div>
+
+      <div className="item-metrics">
+        <span className={`pill ${statusPill[workOrder.status]}`}>
+          {WORK_ORDER_STATUS_LABELS[workOrder.status]}
         </span>
       </div>
 
-      <div className="db-card-body">
-        <div className="detail-grid">
-          <p>
-            <strong>Teléfono</strong>
-            <span>{reservation.contactPhone}</span>
-          </p>
-          {reservation.clientNotes && (
-            <p>
-              <strong>Notas</strong>
-              <span>{reservation.clientNotes}</span>
-            </p>
-          )}
-        </div>
-
-        {/*
-          Sección de equipos — se activará cuando el backend incluya
-          workOrders embebidas en la respuesta de reservas.
-
-          Estructura esperada por equipo:
-            [device.brand] [device.model] → [estado orden] | [+ Crear orden]
-
-          Ejemplo visual:
-            ┌─────────────────────────────────────────┐
-            │ 💻 Laptop Lenovo    [EN REPARACIÓN]      │
-            │ 🖥  PC Gamer        [DIAGNÓSTICO]         │
-            │ 💻 MacBook Air      [+ Crear orden]      │
-            └─────────────────────────────────────────┘
-        */}
-        <div className="empty-state section">
-          <p>
-            La vista de equipos y órdenes por visita estará disponible en el
-            próximo sprint (requiere cambio en backend).
-          </p>
-        </div>
+      <div className="actions">
+        <button
+          className="button button-secondary button-small"
+          onClick={onClick}
+          type="button"
+        >
+          Ver detalle
+        </button>
       </div>
     </article>
   );

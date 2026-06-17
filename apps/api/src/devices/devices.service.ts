@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { CreateDevicePhotoDto } from './dto/create-device-photo.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
+import { UpdateDevicePhotoDto } from './dto/update-device-photo.dto';
 
 type AuthUser = {
   id: number;
@@ -263,6 +264,43 @@ export class DevicesService {
         url: dto.url,
         description: dto.description,
       },
+    });
+  }
+
+  async remove(authUser: AuthUser, id: number) {
+    const device = await this.prisma.device.findUnique({
+      where: { id },
+      include: { workOrders: { select: { id: true } } },
+    });
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    if (device.workOrders.length > 0) {
+      throw new BadRequestException(
+        'Cannot delete a device that has associated work orders',
+      );
+    }
+
+    return this.prisma.device.delete({ where: { id } });
+  }
+
+  async updatePhoto(authUser: AuthUser, photoId: number, dto: UpdateDevicePhotoDto) {
+    const photo = await this.prisma.devicePhoto.findUnique({
+      where: { id: photoId },
+      include: { device: true },
+    });
+
+    if (!photo) {
+      throw new NotFoundException('Device photo not found');
+    }
+
+    this.ensureCanEditDevice(authUser, photo.device.clientId);
+
+    return this.prisma.devicePhoto.update({
+      where: { id: photoId },
+      data: dto,
     });
   }
 

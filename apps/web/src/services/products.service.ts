@@ -17,16 +17,10 @@ type ProductPayload = {
   stock: number;
 };
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const auth = getAuth();
-
-  if (!auth.accessToken) {
-    return {};
-  }
-
-  return {
-    Authorization: `Bearer ${auth.accessToken}`,
-  };
+  if (!auth.accessToken) return {};
+  return { Authorization: `Bearer ${auth.accessToken}` };
 }
 
 export function getProducts() {

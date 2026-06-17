@@ -4,14 +4,14 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/layout/Sidebar";
 
 const routeTitles: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/users": "Gestión de usuarios",
+  "/admin":           "Dashboard",
+  "/users":           "Gestión de usuarios",
   "/admin/servicios": "Gestión de servicios",
   "/admin/productos": "Gestión de productos",
-  "/worker":      "Agenda",
-  "/worker/jobs": "Mis Trabajos",
-  "/ordenes":     "Órdenes de trabajo",
-  "/client":      "Mi panel",
+  "/worker":                "Mi Agenda",
+  "/worker/reservations":   "Reservas",
+  "/worker/jobs":           "Mis Trabajos",
+  "/client":          "Mi panel",
 };
 
 export function DashboardLayout() {

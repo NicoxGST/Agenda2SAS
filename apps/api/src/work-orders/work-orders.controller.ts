@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -26,8 +27,21 @@ export class WorkOrdersController {
 
   @Get()
   @Roles(Role.CLIENT)
-  findAll(@Request() req: any) {
-    return this.workOrdersService.findAll(req.user);
+  findAll(
+    @Request() req: any,
+    @Query('status') status?: string,
+    @Query('workerId') workerId?: string,
+    @Query('clientId') clientId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.workOrdersService.findAll(req.user, { status, workerId, clientId, from, to });
+  }
+
+  @Get(':id/history')
+  @Roles(Role.CLIENT)
+  findHistory(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.workOrdersService.findHistory(req.user, id);
   }
 
   @Get(':id')

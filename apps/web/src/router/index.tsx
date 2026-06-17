@@ -11,8 +11,9 @@ import { ROLES } from "../constants/roles";
 import { AdminDashboard } from "../pages/admin/AdminDashboard";
 import { UserManagementPage } from "../pages/admin/UserManagementPage";
 import { WorkerPage } from "../pages/trabajador/WorkerPage";
+import { WorkerReservationsPage } from "../pages/trabajador/WorkerReservationsPage";
 import { MyJobsPage } from "../pages/trabajador/MyJobsPage";
-import { WorkOrdersPage } from "../pages/ordenes/WorkOrdersPage";
+import { WorkOrderDetailsPage } from "../pages/trabajador/WorkOrderDetailsPage";
 import { ClientPage } from "../pages/cliente/ClientPage";
 import { ServiceManagementPage } from "../pages/servicios/ServiceManagementPage";
 import { ProductManagementPage } from "../pages/productos/ProductManagementPage";
@@ -82,6 +83,15 @@ export const router = createBrowserRouter([
       },
 
       {
+        path: "worker/reservations",
+        element: (
+          <RouteGuard allowedRoles={[ROLES.WORKER, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <WorkerReservationsPage />
+          </RouteGuard>
+        ),
+      },
+
+      {
         path: "worker/jobs",
         element: (
           <RouteGuard allowedRoles={[ROLES.WORKER, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
@@ -91,10 +101,10 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "ordenes",
+        path: "work-orders/:id",
         element: (
           <RouteGuard allowedRoles={[ROLES.WORKER, ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
-            <WorkOrdersPage />
+            <WorkOrderDetailsPage />
           </RouteGuard>
         ),
       },

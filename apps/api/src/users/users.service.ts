@@ -292,5 +292,26 @@ export class UsersService {
         this.safeSelect,
     });
   }
-  
+
+  async updateById(
+    targetUserId: number,
+    dto: { name?: string; email?: string },
+  ) {
+    const targetUser = await this.findById(targetUserId);
+
+    if (!targetUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    const data: any = {};
+    if (dto.name) data.name = dto.name;
+    if (dto.email) data.email = dto.email;
+
+    return this.prisma.user.update({
+      where: { id: targetUserId },
+      data,
+      select: this.safeSelect,
+    });
+  }
+
 }

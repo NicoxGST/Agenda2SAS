@@ -11,6 +11,7 @@ import { AvailabilityModule } from './availability/availability.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { DevicesModule } from './devices/devices.module';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -37,6 +38,8 @@ import { WorkOrdersModule } from './work-orders/work-orders.module';
     DevicesModule,
 
     WorkOrdersModule,
+
+    AdminModule,
   ],
 
   controllers: [AppController],

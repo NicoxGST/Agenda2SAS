@@ -4,7 +4,7 @@ import type { Service, ServicePayload } from "../types";
 
 export type { Service };
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const auth = getAuth();
   if (!auth.accessToken) return {};
   return { Authorization: `Bearer ${auth.accessToken}` };

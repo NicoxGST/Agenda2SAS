@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateDevicePhotoDto {
-  @IsUrl()
+  @IsString()
   @IsNotEmpty()
   url!: string;
 

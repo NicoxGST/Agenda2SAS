@@ -20,6 +20,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -115,5 +116,15 @@ export class UsersController {
       req.user.id,
       dto,
     );
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  updateById(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.usersService.updateById(id, dto);
   }
 }

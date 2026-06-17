@@ -15,6 +15,14 @@ type AuthUser = {
   role: Role;
 };
 
+type WorkOrdersQuery = {
+  status?: string;
+  workerId?: string;
+  clientId?: string;
+  from?: string;
+  to?: string;
+};
+
 @Injectable()
 export class WorkOrdersService {
   constructor(private prisma: PrismaService) {}
@@ -42,9 +50,64 @@ export class WorkOrdersService {
     reservation: true,
   };
 
-  findAll(authUser: AuthUser) {
+  private includeDetailsFull = {
+    device: {
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        photos: true,
+      },
+    },
+    worker: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    },
+    reservation: {
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        service: true,
+      },
+    },
+  };
+
+  findAll(authUser: AuthUser, query: WorkOrdersQuery = {}) {
+    const where: any = {};
+
+    if (authUser.role === Role.CLIENT) {
+      where.device = { clientId: authUser.id };
+    } else if (authUser.role === Role.WORKER) {
+      where.workerId = authUser.id;
+    } else {
+      // ADMIN / SUPER_ADMIN: aplicar filtros opcionales
+      if (query.workerId) where.workerId = Number(query.workerId);
+      if (query.clientId) where.device = { clientId: Number(query.clientId) };
+    }
+
+    if (query.status) where.status = query.status as WorkOrderStatus;
+
+    if (query.from || query.to) {
+      where.createdAt = {};
+      if (query.from) where.createdAt.gte = new Date(query.from);
+      if (query.to) where.createdAt.lte = new Date(query.to);
+    }
+
     return this.prisma.workOrder.findMany({
-      where: this.getScopedWhere(authUser),
+      where,
       include: this.includeDetails,
       orderBy: {
         createdAt: 'desc',
@@ -57,7 +120,7 @@ export class WorkOrdersService {
       where: {
         id,
       },
-      include: this.includeDetails,
+      include: this.includeDetailsFull,
     });
 
     if (!workOrder) {
@@ -148,16 +211,44 @@ export class WorkOrdersService {
   async updateStatus(authUser: AuthUser, id: number, status: WorkOrderStatus) {
     this.ensureCanManageWorkOrders(authUser);
 
-    await this.findOne(authUser, id);
+    const workOrder = await this.findOne(authUser, id);
 
-    return this.prisma.workOrder.update({
-      where: {
-        id,
+    if (workOrder.status === status) {
+      return workOrder;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.workOrder.update({
+        where: { id },
+        data: { status },
+        include: this.includeDetails,
+      });
+
+      await tx.workOrderHistory.create({
+        data: {
+          workOrderId: id,
+          previousStatus: workOrder.status,
+          newStatus: status,
+          changedByUserId: authUser.id,
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  async findHistory(authUser: AuthUser, workOrderId: number) {
+    await this.findOne(authUser, workOrderId);
+
+    return this.prisma.workOrderHistory.findMany({
+      where: { workOrderId },
+      select: {
+        id: true,
+        previousStatus: true,
+        newStatus: true,
+        createdAt: true,
       },
-      data: {
-        status,
-      },
-      include: this.includeDetails,
+      orderBy: { createdAt: 'asc' },
     });
   }
 

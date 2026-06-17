@@ -15,9 +15,9 @@ const clientNav: NavEntry[] = [
 ];
 
 const workerNav: NavEntry[] = [
-  { to: "/worker",      label: "Mi Agenda",          end: true, showInNavbar: true },
-  { to: "/worker/jobs", label: "Mis Trabajos",       showInNavbar: true },
-  { to: "/ordenes",     label: "Órdenes de trabajo", navbarLabel: "Órdenes", showInNavbar: true },
+  { to: "/worker",                label: "Mi Agenda",    end: true, showInNavbar: true },
+  { to: "/worker/reservations",   label: "Reservas",     showInNavbar: true },
+  { to: "/worker/jobs",           label: "Mis Trabajos", showInNavbar: true },
 ];
 
 const adminNav: NavEntry[] = [
@@ -25,8 +25,9 @@ const adminNav: NavEntry[] = [
   { to: "/users",           label: "Usuarios" },
   { to: "/admin/servicios", label: "Servicios" },
   { to: "/admin/productos", label: "Productos" },
-  { to: "/worker",          label: "Agenda",            showInNavbar: true },
-  { to: "/ordenes",         label: "Órdenes de trabajo" },
+  { to: "/worker",                label: "Agenda",         showInNavbar: true },
+  { to: "/worker/reservations",   label: "Reservas",       showInNavbar: true },
+  { to: "/worker/jobs",           label: "Mis Trabajos" },
 ];
 
 export const roleNavMap: Record<string, NavEntry[]> = {
