@@ -3138,3 +3138,275 @@ h3 {
     padding: 36px 24px;
   }
 }
+
+/* ── Filtros públicos (servicios y productos) ── */
+.pub-filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.pub-filters-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pub-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+}
+
+.pub-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.pub-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.pub-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pub-search-input:focus {
+  border-color: var(--orange);
+}
+
+.pub-sort-select {
+  padding: 10px 36px 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  white-space: nowrap;
+  transition: border-color 0.2s;
+}
+
+.pub-sort-select:focus {
+  border-color: var(--orange);
+}
+
+.pub-sort-select option {
+  background: #1a2035;
+  color: var(--white);
+}
+
+.pub-section-header-inline {
+  margin: 0;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.pub-section-header-inline h2 {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .pub-filters-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pub-filters-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .pub-search-wrap {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .pub-sort-select {
+    width: 100%;
+  }
+
+  .pub-section-header-inline {
+    text-align: left;
+  }
+}
+
+/* ── Modal de verificación de correo ── */
+.vm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 26, 0.75);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.vm-card {
+  background: #1a2035;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.vm-card .field {
+  width: 100%;
+  text-align: left;
+}
+
+.vm-card .field > span {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.vm-card .button {
+  width: 100%;
+}
+
+.vm-card .alert {
+  width: 100%;
+}
+
+.vm-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--orange-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.vm-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--orange);
+}
+
+.vm-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vm-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.vm-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.6;
+}
+
+.vm-subtitle strong {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.vm-code-input {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 12px;
+}
+
+.vm-resend-btn {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.vm-field {
+  width: 100%;
+  text-align: left;
+}
+
+.vm-label {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.vm-btn {
+  width: 100%;
+}
+
+.vm-icon-wrap-success {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.vm-icon-success {
+  stroke: #22c55e;
+}
+
+/* ── Password show/hide ── */
+.password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.password-eye {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.35);
+  transition: color 0.2s;
+}
+
+.password-eye:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+
+.password-eye svg {
+  width: 18px;
+  height: 18px;
+}

@@ -15,7 +15,12 @@ model User {
   password     String
   role         Role
   updatedAt    DateTime @updatedAt
-  refreshToken String?
+  refreshToken        String?
+  isVerified          Boolean   @default(false)
+  verificationCode    String?
+  verificationCodeAt  DateTime?
+  resetToken          String?
+  resetTokenAt        DateTime?
 
   workerAvailabilities WorkerAvailability[] @relation("WorkerAvailabilityWorker")
   clientReservations    Reservation[]       @relation("ReservationClient")

@@ -31,10 +31,10 @@ export async function apiFetch(
 
   if (
     response.status === 401 &&
-    endpoint !==
-      '/auth/login' &&
-    endpoint !==
-      '/auth/refresh'
+    endpoint !== '/auth/login' &&
+    endpoint !== '/auth/refresh' &&
+    endpoint !== '/auth/verify-email' &&
+    endpoint !== '/auth/resend-code'
   ) {
 
     try {

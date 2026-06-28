@@ -6,6 +6,7 @@ Arquitectura
 Monorepo
 apps/api
 apps/web
+
 Levantar Proyecto
 Backend:
 cd apps/api
@@ -18,6 +19,7 @@ pnpm prisma studio
 Frontend:
 cd apps/web
 pnpm dev
+
 Stack
 Backend
 NestJS

@@ -246,6 +246,7 @@ export class UsersService {
         password:
           hashedPassword,
         role: data.role,
+        isVerified: true,
       },
 
       select: {
