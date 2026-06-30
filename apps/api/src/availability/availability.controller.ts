@@ -38,6 +38,12 @@ export class AvailabilityController {
     return this.availabilityService.getAvailableSlots(query.workerId, query.date);
   }
 
+  @Get('worker-schedule')
+  @Roles(Role.CLIENT)
+  getWorkerSchedule(@Query('workerId') workerId: string) {
+    return this.availabilityService.findWorkerSchedule(Number(workerId));
+  }
+
   @Get('my')
   @Roles(Role.WORKER)
   findMine(@Request() req: any) {

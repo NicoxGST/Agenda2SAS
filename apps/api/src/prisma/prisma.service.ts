@@ -7,7 +7,11 @@ export class PrismaService
   implements OnModuleInit
 {
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+    } catch (err) {
+      console.warn('Prisma initial connect failed, will retry on first query:', err);
+    }
   }
 
   async enableShutdownHooks(app: INestApplication) {

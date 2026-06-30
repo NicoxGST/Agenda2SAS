@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth.store";
 import { useClientData } from "./hooks/useClientData";
 import { NuevaAtencionSection } from "./sections/NuevaAtencionSection";
@@ -5,6 +7,15 @@ import { MisReparacionesSection } from "./sections/MisReparacionesSection";
 
 export function ClientPage() {
   const auth = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const ref = sessionStorage.getItem('pendingPaymentRef');
+    if (ref) {
+      sessionStorage.removeItem('pendingPaymentRef');
+      navigate(`/pago/exito?ref=${encodeURIComponent(ref)}`);
+    }
+  }, [navigate]);
   const firstName = auth.user?.name.split(" ")[0] ?? "Cliente";
 
   const {
@@ -16,12 +27,14 @@ export function ClientPage() {
     reservationForm,
     expandedDeviceId,
     error,
-    success,
     loading,
+    loadingSlots,
+    availableDaysOfWeek,
+    availableDates,
     selectedWorker,
     setExpandedDeviceId,
     updateReservationForm,
-    handleCreateReservation,
+    handleCheckout,
     handleDevicePhotoAdded,
     handleDevicePhotoDeleted,
   } = useClientData();
@@ -37,15 +50,17 @@ export function ClientPage() {
       </div>
 
       <NuevaAtencionSection
+        availableDaysOfWeek={availableDaysOfWeek}
+        availableDates={availableDates}
         error={error}
         loading={loading}
+        loadingSlots={loadingSlots}
         reservationForm={reservationForm}
         selectedWorker={selectedWorker}
         services={services}
         slots={slots}
-        success={success}
         workers={workers}
-        onCreateReservation={handleCreateReservation}
+        onCheckout={handleCheckout}
         onReservationFormChange={updateReservationForm}
       />
 

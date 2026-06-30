@@ -19,6 +19,9 @@ import { ServiceManagementPage } from "../pages/servicios/ServiceManagementPage"
 import { ProductManagementPage } from "../pages/productos/ProductManagementPage";
 import { PublicServiciosPage } from "../pages/public/PublicServiciosPage";
 import { PublicProductosPage } from "../pages/public/PublicProductosPage";
+import { PagoExitoPage } from "../pages/pago/PagoExitoPage";
+import { PagoFalloPage } from "../pages/pago/PagoFalloPage";
+import { PagoPendientePage } from "../pages/pago/PagoPendientePage";
 
 export const router = createBrowserRouter([
   {
@@ -30,6 +33,9 @@ export const router = createBrowserRouter([
       { path: "register", element: <RegisterPage /> },
       { path: "servicios", element: <PublicServiciosPage /> },
       { path: "productos", element: <PublicProductosPage /> },
+      { path: "pago/exito", element: <PagoExitoPage /> },
+      { path: "pago/fallo", element: <PagoFalloPage /> },
+      { path: "pago/pendiente", element: <PagoPendientePage /> },
     ],
   },
 

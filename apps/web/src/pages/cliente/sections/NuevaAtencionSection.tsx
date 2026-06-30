@@ -1,3 +1,4 @@
+import { BookingCalendar } from "../../../components/booking/BookingCalendar";
 import type { AvailableSlot, Service, Worker } from "../../../types";
 import type { ReservationFormState } from "../hooks/useClientData";
 
@@ -5,29 +6,31 @@ type Props = {
   services: Service[];
   workers: Worker[];
   slots: AvailableSlot[];
+  availableDaysOfWeek: number[];
+  availableDates: string[];
   reservationForm: ReservationFormState;
   selectedWorker?: Worker;
+  loadingSlots: boolean;
   onReservationFormChange: (key: keyof ReservationFormState, value: string) => void;
-  onCreateReservation: () => void;
+  onCheckout: () => void;
   loading: boolean;
   error: string;
-  success: string;
 };
 
 export function NuevaAtencionSection({
   services,
   workers,
   slots,
+  availableDaysOfWeek,
+  availableDates,
   reservationForm,
   selectedWorker,
+  loadingSlots,
   onReservationFormChange,
-  onCreateReservation,
+  onCheckout,
   loading,
   error,
-  success,
 }: Props) {
-  const canLoadSlots = !!(reservationForm.workerId && reservationForm.date);
-
   return (
     <div className="db-card db-card-mb">
       <div className="db-card-header">
@@ -35,8 +38,7 @@ export function NuevaAtencionSection({
       </div>
 
       <div className="db-card-body">
-        {error   && <p className="alert alert-error section">{error}</p>}
-        {success && <p className="alert alert-success section">{success}</p>}
+        {error && <p className="alert alert-error">{error}</p>}
 
         <div className="form-grid">
           <label className="field">
@@ -66,30 +68,11 @@ export function NuevaAtencionSection({
           </label>
 
           <label className="field">
-            <span>Fecha</span>
-            <input
-              type="date"
-              value={reservationForm.date}
-              onChange={(e) => onReservationFormChange("date", e.target.value)}
-            />
-          </label>
-
-          <label className="field">
             <span>Teléfono</span>
             <input
               placeholder="+56 9 1234 5678"
               value={reservationForm.contactPhone}
               onChange={(e) => onReservationFormChange("contactPhone", e.target.value)}
-            />
-          </label>
-
-          <label className="field">
-            <span>Abono</span>
-            <input
-              min="0"
-              type="number"
-              value={reservationForm.depositAmount}
-              onChange={(e) => onReservationFormChange("depositAmount", e.target.value)}
             />
           </label>
 
@@ -103,40 +86,38 @@ export function NuevaAtencionSection({
           </label>
         </div>
 
-        <div className="slot-grid section">
-          {slots.map((slot) => (
-            <button
-              className={
-                reservationForm.scheduledAt === slot.scheduledAt
-                  ? "button button-primary"
-                  : "button button-secondary"
-              }
-              key={slot.scheduledAt}
-              onClick={() => onReservationFormChange("scheduledAt", slot.scheduledAt)}
-              type="button"
-            >
-              {slot.time}
-            </button>
-          ))}
-          {canLoadSlots && slots.length === 0 && (
-            <div className="empty-state">No hay horarios disponibles.</div>
-          )}
-        </div>
-
-        {selectedWorker && (
+        {reservationForm.workerId ? (
+          <div className="section">
+            {selectedWorker && (
+              <p className="booking-cal-section-hint">
+                Días disponibles de {selectedWorker.name}
+              </p>
+            )}
+            <BookingCalendar
+              availableDaysOfWeek={availableDaysOfWeek}
+              availableDates={availableDates}
+              loadingSlots={loadingSlots}
+              selectedDate={reservationForm.date}
+              selectedSlot={reservationForm.scheduledAt}
+              slots={slots}
+              onDateSelect={(date) => onReservationFormChange("date", date)}
+              onSlotSelect={(scheduledAt) => onReservationFormChange("scheduledAt", scheduledAt)}
+            />
+          </div>
+        ) : (
           <p className="item-meta section">
-            Técnico seleccionado: {selectedWorker.name}
+            Selecciona un técnico para ver el calendario de disponibilidad.
           </p>
         )}
 
         <div className="actions section">
           <button
             className="button button-primary"
-            disabled={loading}
-            onClick={onCreateReservation}
+            disabled={loading || !reservationForm.scheduledAt}
+            onClick={onCheckout}
             type="button"
           >
-            {loading ? "Reservando…" : "Crear reserva"}
+            {loading ? "Redirigiendo…" : "Pagar abono — $100"}
           </button>
         </div>
       </div>

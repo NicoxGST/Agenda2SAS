@@ -23,6 +23,10 @@ export function getAvailability(workerId?: number): Promise<WorkerAvailability[]
   return apiFetch(`/availability${query}`, { headers: authHeaders() });
 }
 
+export function getWorkerSchedule(workerId: number): Promise<Pick<WorkerAvailability, 'dayOfWeek' | 'specificDate' | 'startTime' | 'endTime' | 'slotMinutes'>[]> {
+  return apiFetch(`/availability/worker-schedule?workerId=${workerId}`, { headers: authHeaders() });
+}
+
 export function getAvailableSlots(workerId: number, date: string): Promise<AvailableSlot[]> {
   return apiFetch(
     `/availability/available-slots?workerId=${workerId}&date=${date}`,

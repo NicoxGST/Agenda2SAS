@@ -17,7 +17,7 @@ import {
 
 export type AvailabilityFormState = {
   workerId: string;
-  dayOfWeek: string;
+  specificDate: string;
   startTime: string;
   endTime: string;
   slotMinutes: string;
@@ -25,7 +25,7 @@ export type AvailabilityFormState = {
 
 const emptyAvailabilityForm: AvailabilityFormState = {
   workerId: "",
-  dayOfWeek: "1",
+  specificDate: "",
   startTime: "09:00",
   endTime: "18:00",
   slotMinutes: "60",
@@ -105,18 +105,26 @@ export function useWorkerData() {
     try {
       setError("");
       setLoading(true);
+      const slotMinutes = Number(availabilityForm.slotMinutes);
+      if (
+        !selectedWorkerId ||
+        !availabilityForm.specificDate ||
+        !availabilityForm.startTime ||
+        !availabilityForm.endTime ||
+        slotMinutes < 15
+      ) {
+        throw new Error("Selecciona una fecha y completa los horarios");
+      }
       const payload: AvailabilityPayload = {
         workerId: selectedWorkerId,
-        dayOfWeek: Number(availabilityForm.dayOfWeek),
+        specificDate: availabilityForm.specificDate,
         startTime: availabilityForm.startTime,
         endTime: availabilityForm.endTime,
-        slotMinutes: Number(availabilityForm.slotMinutes),
+        slotMinutes,
       };
-      if (!payload.workerId || payload.dayOfWeek < 0 || !payload.startTime || !payload.endTime || payload.slotMinutes < 15) {
-        throw new Error("Completa la disponibilidad");
-      }
       const created = await createAvailability(payload);
       setAvailability((prev) => [...prev, created]);
+      setAvailabilityForm((prev) => ({ ...prev, specificDate: "", startTime: "09:00", endTime: "18:00" }));
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {

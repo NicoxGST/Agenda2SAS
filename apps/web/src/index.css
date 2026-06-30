@@ -3410,3 +3410,160 @@ h3 {
   width: 18px;
   height: 18px;
 }
+
+/* ═══════════════════════════════════════════
+   BOOKING CALENDAR
+═══════════════════════════════════════════ */
+
+.booking-cal {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.booking-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
+.booking-cal-month-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.booking-cal-nav {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--white);
+  font-size: 18px;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.booking-cal-nav:hover:not(:disabled) {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.booking-cal-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.booking-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  padding: 12px 10px;
+}
+
+.booking-cal-weekday {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.booking-cal-day {
+  display: grid;
+  place-items: center;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: default;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  margin: 2px;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.booking-cal-day--off {
+  color: var(--line);
+  cursor: not-allowed;
+}
+
+.booking-cal-day--available {
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.booking-cal-day--available:hover {
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.booking-cal-day--today {
+  border-color: var(--orange);
+  color: var(--orange);
+  font-weight: 800;
+}
+
+.booking-cal-day--today.booking-cal-day--available:hover {
+  background: var(--orange-soft);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.booking-cal-day--selected {
+  background: var(--blue) !important;
+  border-color: var(--blue) !important;
+  color: var(--white) !important;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.booking-cal-slots-wrap {
+  border-top: 1px solid var(--line);
+  padding: 16px 18px;
+  background: var(--surface-soft);
+}
+
+.booking-cal-slots-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 10px;
+}
+
+.booking-cal-loading {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.booking-cal-section-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 6px;
+  font-style: italic;
+}
+
+@media (max-width: 860px) {
+  .booking-cal-day {
+    height: 34px;
+    font-size: 12px;
+  }
+}

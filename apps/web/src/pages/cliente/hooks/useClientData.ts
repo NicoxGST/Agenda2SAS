@@ -9,13 +9,10 @@ import type {
   DevicePhoto,
   DevicePhotoPayload,
   Reservation,
-  ReservationPayload,
 } from "../../../types";
-import { getWorkers, getAvailableSlots } from "../../../services/availability.service";
-import {
-  createReservation,
-  getMyReservations,
-} from "../../../services/reservations.service";
+import { getWorkers, getAvailableSlots, getWorkerSchedule } from "../../../services/availability.service";
+import { getMyReservations } from "../../../services/reservations.service";
+import { createCheckout } from "../../../services/payments.service";
 import { getPublicServices } from "../../../services/services.service";
 import {
   createDevice,
@@ -31,7 +28,6 @@ export type ReservationFormState = {
   scheduledAt: string;
   contactPhone: string;
   clientNotes: string;
-  depositAmount: string;
 };
 
 export type DeviceFormState = {
@@ -55,7 +51,6 @@ const emptyReservationForm: ReservationFormState = {
   scheduledAt: "",
   contactPhone: "",
   clientNotes: "",
-  depositAmount: "0",
 };
 
 const emptyDeviceForm: DeviceFormState = {
@@ -82,10 +77,13 @@ export function useClientData() {
   const [deviceForm, setDeviceForm] = useState<DeviceFormState>(emptyDeviceForm);
   const [photoForm, setPhotoForm]   = useState<PhotoFormState>(emptyPhotoForm);
 
+  const [availableDaysOfWeek, setAvailableDaysOfWeek] = useState<number[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [expandedDeviceId, setExpandedDeviceId] = useState<number | null>(null);
   const [error, setError]   = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const canLoadSlots = !!(reservationForm.workerId && reservationForm.date);
 
@@ -122,6 +120,35 @@ export function useClientData() {
     return () => { ignore = true; };
   }, []);
 
+  // Carga la disponibilidad semanal del trabajador cuando cambia la selección
+  useEffect(() => {
+    let ignore = false;
+
+    if (!reservationForm.workerId) {
+      setAvailableDaysOfWeek([]);
+      setAvailableDates([]);
+      return;
+    }
+
+    getWorkerSchedule(Number(reservationForm.workerId))
+      .then((data) => {
+        if (ignore) return;
+        const specific = data
+          .filter((a) => a.specificDate)
+          .map((a) => a.specificDate!.slice(0, 10));
+        const recurring = data
+          .filter((a) => !a.specificDate)
+          .map((a) => a.dayOfWeek);
+        setAvailableDates([...new Set(specific)]);
+        setAvailableDaysOfWeek([...new Set(recurring)]);
+      })
+      .catch(() => {
+        if (!ignore) { setAvailableDaysOfWeek([]); setAvailableDates([]); }
+      });
+
+    return () => { ignore = true; };
+  }, [reservationForm.workerId]);
+
   // Carga slots disponibles cuando cambia trabajador o fecha
   useEffect(() => {
     let ignore = false;
@@ -132,6 +159,7 @@ export function useClientData() {
         return;
       }
       try {
+        setLoadingSlots(true);
         setError("");
         setReservationForm((prev) => ({ ...prev, scheduledAt: "" }));
         const data = await getAvailableSlots(
@@ -144,6 +172,8 @@ export function useClientData() {
           setSlots([]);
           setError(getErrorMessage(err));
         }
+      } finally {
+        if (!ignore) setLoadingSlots(false);
       }
     }
 
@@ -152,7 +182,11 @@ export function useClientData() {
   }, [canLoadSlots, reservationForm.date, reservationForm.workerId]);
 
   function updateReservationForm(key: keyof ReservationFormState, value: string) {
-    setReservationForm((prev) => ({ ...prev, [key]: value }));
+    setReservationForm((prev) => ({
+      ...prev,
+      [key]: value,
+      ...(key === "workerId" ? { date: "", scheduledAt: "" } : {}),
+    }));
   }
 
   function updateDeviceForm(key: keyof DeviceFormState, value: string) {
@@ -163,34 +197,26 @@ export function useClientData() {
     setPhotoForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleCreateReservation() {
+  async function handleCheckout() {
     try {
       setError("");
-      setSuccess("");
       setLoading(true);
-      const payload: ReservationPayload = {
-        serviceId: Number(reservationForm.serviceId),
-        workerId: Number(reservationForm.workerId),
+      const serviceId = Number(reservationForm.serviceId);
+      const workerId  = Number(reservationForm.workerId);
+      if (!serviceId || !workerId || !reservationForm.scheduledAt || !reservationForm.contactPhone.trim()) {
+        throw new Error("Completa todos los datos antes de pagar");
+      }
+      const { initPoint, externalRef } = await createCheckout({
+        serviceId,
+        workerId,
         scheduledAt: reservationForm.scheduledAt,
         contactPhone: reservationForm.contactPhone.trim(),
         clientNotes: reservationForm.clientNotes.trim() || undefined,
-        depositAmount: Number(reservationForm.depositAmount),
-      };
-      if (
-        !payload.serviceId || !payload.workerId ||
-        !payload.scheduledAt || !payload.contactPhone ||
-        payload.depositAmount < 0
-      ) {
-        throw new Error("Completa los datos de la reserva");
-      }
-      const created = await createReservation(payload);
-      setReservations((prev) => [created, ...prev]);
-      setReservationForm(emptyReservationForm);
-      setSlots([]);
-      setSuccess("Reserva creada correctamente");
+      });
+      sessionStorage.setItem('pendingPaymentRef', externalRef);
+      window.location.href = initPoint;
     } catch (err: unknown) {
       setError(getErrorMessage(err));
-    } finally {
       setLoading(false);
     }
   }
@@ -297,15 +323,18 @@ export function useClientData() {
     error,
     success,
     loading,
+    loadingSlots,
     canLoadSlots,
+    availableDaysOfWeek,
     selectedWorker,
+    availableDates,
     // setters
     setExpandedDeviceId,
     // handlers
     updateReservationForm,
     updateDeviceForm,
     updatePhotoForm,
-    handleCreateReservation,
+    handleCheckout,
     handleCreateDevice,
     handleCreatePhoto,
     handleDeletePhoto,

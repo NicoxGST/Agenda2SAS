@@ -4,6 +4,7 @@ export type WorkerAvailability = {
   id: number;
   workerId: number;
   dayOfWeek: number;
+  specificDate?: string | null;
   startTime: string;
   endTime: string;
   slotMinutes: number;
@@ -18,7 +19,8 @@ export type AvailableSlot = {
 
 export type AvailabilityPayload = {
   workerId: number;
-  dayOfWeek: number;
+  dayOfWeek?: number;
+  specificDate?: string;
   startTime: string;
   endTime: string;
   slotMinutes: number;

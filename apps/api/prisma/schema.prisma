@@ -28,6 +28,7 @@ model User {
   devices               Device[]
   workerWorkOrders      WorkOrder[]         @relation("WorkOrderWorker")
   workOrderHistories    WorkOrderHistory[]
+  payments              Payment[]           @relation("PaymentClient")
 }
 
 model Service {
@@ -54,19 +55,21 @@ model Product {
 }
 
 model WorkerAvailability {
-  id          Int      @id @default(autoincrement())
-  workerId    Int
-  dayOfWeek   Int
-  startTime   String
-  endTime     String
-  slotMinutes Int      @default(60)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int       @id @default(autoincrement())
+  workerId     Int
+  dayOfWeek    Int
+  specificDate DateTime?
+  startTime    String
+  endTime      String
+  slotMinutes  Int       @default(60)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   worker User @relation("WorkerAvailabilityWorker", fields: [workerId], references: [id])
 
   @@index([workerId, dayOfWeek])
+  @@index([workerId, specificDate])
 }
 
 model Reservation {
@@ -86,9 +89,28 @@ model Reservation {
   worker  User    @relation("ReservationWorker", fields: [workerId], references: [id])
   service Service @relation(fields: [serviceId], references: [id])
   workOrders WorkOrder[]
+  payment    Payment?
 
   @@unique([workerId, scheduledAt])
   @@index([clientId, scheduledAt])
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  mpPreferenceId  String        @unique
+  mpPaymentId     String?       @unique
+  status          PaymentStatus @default(PENDING)
+  amount          Int
+  clientId        Int
+  reservationData Json
+  reservationId   Int?          @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  client      User         @relation("PaymentClient", fields: [clientId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+
+  @@index([clientId])
 }
 
 model Device {
@@ -161,6 +183,13 @@ enum Role {
   WORKER
   CLIENT
   SUPER_ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum ReservationStatus {

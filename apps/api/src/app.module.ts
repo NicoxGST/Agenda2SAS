@@ -12,13 +12,14 @@ import { ReservationsModule } from './reservations/reservations.module';
 import { DevicesModule } from './devices/devices.module';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
 import { AdminModule } from './admin/admin.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
 
-      envFilePath: 'apps/api/.env',
+      envFilePath: '.env',
     }),
 
     AuthModule,
@@ -40,6 +41,8 @@ import { AdminModule } from './admin/admin.module';
     WorkOrdersModule,
 
     AdminModule,
+
+    PaymentsModule,
   ],
 
   controllers: [AppController],

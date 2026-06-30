@@ -6,6 +6,22 @@ const DAY_LABELS = [
   "Jueves", "Viernes", "Sábado",
 ];
 
+function formatDate(isoDate: string): string {
+  const [year, month, day] = isoDate.slice(0, 10).split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  const dayName = DAY_LABELS[d.getUTCDay()];
+  return `${dayName} ${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
+}
+
+function todayStr(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+function itemTitle(item: WorkerAvailability): string {
+  if (item.specificDate) return formatDate(item.specificDate);
+  return DAY_LABELS[item.dayOfWeek] ?? `Día ${item.dayOfWeek}`;
+}
+
 type Props = {
   workers: Worker[];
   canPickWorker: boolean;
@@ -39,7 +55,6 @@ export function AvailabilitySection({
       </div>
       <div className="db-card-body">
 
-        {/* ── Formulario ── */}
         <div className="form-grid">
           {canPickWorker && (
             <label className="field">
@@ -57,15 +72,13 @@ export function AvailabilitySection({
           )}
 
           <label className="field">
-            <span>Día</span>
-            <select
-              value={form.dayOfWeek}
-              onChange={(e) => onFormChange("dayOfWeek", e.target.value)}
-            >
-              {DAY_LABELS.map((label, index) => (
-                <option key={label} value={index}>{label}</option>
-              ))}
-            </select>
+            <span>Fecha</span>
+            <input
+              min={todayStr()}
+              type="date"
+              value={form.specificDate}
+              onChange={(e) => onFormChange("specificDate", e.target.value)}
+            />
           </label>
 
           <label className="field">
@@ -109,7 +122,6 @@ export function AvailabilitySection({
           </button>
         </div>
 
-        {/* ── Lista de bloques ── */}
         <div className="list section">
           {availability.length === 0 && (
             <div className="empty-state">No hay disponibilidad registrada.</div>
@@ -117,7 +129,7 @@ export function AvailabilitySection({
           {availability.map((item) => (
             <article className="item-row" key={item.id}>
               <div className="item-main">
-                <h3 className="item-title">{DAY_LABELS[item.dayOfWeek]}</h3>
+                <h3 className="item-title">{itemTitle(item)}</h3>
                 <p className="item-description">
                   {item.startTime} – {item.endTime}, bloques de {item.slotMinutes} min
                 </p>

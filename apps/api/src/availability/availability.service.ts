@@ -86,10 +86,21 @@ export class AvailabilityService {
     await this.ensureWorkerExists(dto.workerId);
     this.ensureValidTimeRange(dto.startTime, dto.endTime);
 
+    let dayOfWeek = dto.dayOfWeek;
+    let specificDate: Date | undefined;
+
+    if (dto.specificDate) {
+      specificDate = new Date(`${dto.specificDate}T00:00:00.000Z`);
+      dayOfWeek = specificDate.getUTCDay();
+    } else if (dayOfWeek === undefined) {
+      throw new BadRequestException('Either specificDate or dayOfWeek must be provided');
+    }
+
     return this.prisma.workerAvailability.create({
       data: {
         workerId: dto.workerId,
-        dayOfWeek: dto.dayOfWeek,
+        dayOfWeek: dayOfWeek!,
+        specificDate: specificDate ?? null,
         startTime: dto.startTime,
         endTime: dto.endTime,
         slotMinutes: dto.slotMinutes ?? 60,
@@ -143,15 +154,46 @@ export class AvailabilityService {
     });
   }
 
+  async findWorkerSchedule(workerId: number) {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const records = await this.prisma.workerAvailability.findMany({
+      where: {
+        workerId,
+        isActive: true,
+        OR: [
+          { specificDate: { gte: today } },
+          { specificDate: null },
+        ],
+      },
+      select: {
+        dayOfWeek: true,
+        specificDate: true,
+        startTime: true,
+        endTime: true,
+        slotMinutes: true,
+      },
+      orderBy: [{ specificDate: 'asc' }, { dayOfWeek: 'asc' }],
+    });
+
+    return records;
+  }
+
   async getAvailableSlots(workerId: number, date: string) {
     await this.ensureWorkerExists(workerId);
 
     const dayOfWeek = this.getDayOfWeek(date);
+    const specificDate = new Date(`${date}T00:00:00.000Z`);
+
     const availabilities = await this.prisma.workerAvailability.findMany({
       where: {
         workerId,
-        dayOfWeek,
         isActive: true,
+        OR: [
+          { specificDate },
+          { specificDate: null, dayOfWeek },
+        ],
       },
       orderBy: {
         startTime: 'asc',
