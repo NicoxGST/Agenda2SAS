@@ -8,6 +8,7 @@ import {
   Preference,
 } from 'mercadopago';
 
+import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 
@@ -28,6 +29,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly email: EmailService,
   ) {}
 
   private get mpClient() {
@@ -241,6 +243,32 @@ export class PaymentsService {
     this.logger.log(
       `Reservation ${reservation.id} created from payment ${payment.id}`,
     );
+
+    try {
+      const client = await this.prisma.user.findUnique({
+        where: { id: payment.clientId },
+        select: { email: true, name: true },
+      });
+      const service = await this.prisma.service.findUnique({
+        where: { id: data.serviceId },
+        select: { name: true },
+      });
+      const worker = await this.prisma.user.findUnique({
+        where: { id: data.workerId },
+        select: { name: true },
+      });
+      if (client && service && worker) {
+        await this.email.sendReservationConfirmation(client.email, client.name, {
+          reservationId: reservation.id,
+          serviceName: service.name,
+          workerName: worker.name,
+          scheduledAt: reservation.scheduledAt,
+          depositAmount: payment.amount,
+        });
+      }
+    } catch (err) {
+      this.logger.error('Failed to send reservation confirmation email', err);
+    }
 
     return reservation;
   }

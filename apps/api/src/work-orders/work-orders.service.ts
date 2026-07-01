@@ -2,10 +2,12 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Role, WorkOrderStatus } from '@prisma/client';
 
+import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
@@ -25,7 +27,12 @@ type WorkOrdersQuery = {
 
 @Injectable()
 export class WorkOrdersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(WorkOrdersService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   private includeDetails = {
     device: {
@@ -217,8 +224,8 @@ export class WorkOrdersService {
       return workOrder;
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.workOrder.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.workOrder.update({
         where: { id },
         data: { status },
         include: this.includeDetails,
@@ -233,8 +240,38 @@ export class WorkOrdersService {
         },
       });
 
-      return updated;
+      return result;
     });
+
+    if (status === WorkOrderStatus.READY) {
+      try {
+        const full = await this.prisma.workOrder.findUnique({
+          where: { id },
+          include: {
+            device: {
+              include: {
+                client: { select: { email: true, name: true } },
+              },
+            },
+          },
+        });
+        if (full?.device.client) {
+          await this.email.sendEquipmentReady(
+            full.device.client.email,
+            full.device.client.name,
+            {
+              workOrderId: id,
+              deviceBrand: full.device.brand,
+              deviceModel: full.device.model,
+            },
+          );
+        }
+      } catch (err) {
+        this.logger.error('Failed to send equipment ready email', err);
+      }
+    }
+
+    return updated;
   }
 
   async findHistory(authUser: AuthUser, workOrderId: number) {
