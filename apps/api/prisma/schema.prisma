@@ -52,6 +52,22 @@ model Product {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  workOrderProducts WorkOrderProduct[]
+}
+
+model WorkOrderProduct {
+  id          Int      @id @default(autoincrement())
+  workOrderId Int
+  productId   Int
+  quantity    Int      @default(1)
+  unitPrice   Int
+  createdAt   DateTime @default(now())
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@index([workOrderId])
 }
 
 model WorkerAvailability {
@@ -159,6 +175,7 @@ model WorkOrder {
   worker             User               @relation("WorkOrderWorker", fields: [workerId], references: [id])
   reservation        Reservation?       @relation(fields: [reservationId], references: [id])
   workOrderHistories WorkOrderHistory[]
+  workOrderProducts  WorkOrderProduct[]
 
   @@index([deviceId])
   @@index([workerId])

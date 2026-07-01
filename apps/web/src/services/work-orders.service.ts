@@ -1,8 +1,8 @@
 import { apiFetch } from "./api";
 import { getAuth } from "../store/auth.store";
-import type { WorkOrderStatus, WorkOrder, WorkOrderDetail, WorkOrderHistoryEntry, WorkOrderPayload } from "../types";
+import type { WorkOrderStatus, WorkOrder, WorkOrderDetail, WorkOrderHistoryEntry, WorkOrderPayload, WorkOrderProduct } from "../types";
 
-export type { WorkOrderStatus, WorkOrder, WorkOrderDetail, WorkOrderHistoryEntry };
+export type { WorkOrderStatus, WorkOrder, WorkOrderDetail, WorkOrderHistoryEntry, WorkOrderProduct };
 export { WORK_ORDER_STATUS_LABELS } from "../types";
 
 function authHeaders(): Record<string, string> {
@@ -65,5 +65,27 @@ export function updateWorkOrderStatus(
     method: "PATCH",
     headers: authHeaders(),
     body: JSON.stringify({ status }),
+  });
+}
+
+export function addWorkOrderProduct(
+  workOrderId: number,
+  productId: number,
+  quantity: number,
+): Promise<WorkOrderProduct> {
+  return apiFetch(`/work-orders/${workOrderId}/products`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ productId, quantity }),
+  });
+}
+
+export function removeWorkOrderProduct(
+  workOrderId: number,
+  entryId: number,
+): Promise<{ id: number }> {
+  return apiFetch(`/work-orders/${workOrderId}/products/${entryId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
   });
 }

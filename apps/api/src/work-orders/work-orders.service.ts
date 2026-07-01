@@ -55,6 +55,13 @@ export class WorkOrdersService {
       },
     },
     reservation: true,
+    workOrderProducts: {
+      include: {
+        product: {
+          select: { id: true, name: true, price: true },
+        },
+      },
+    },
   };
 
   private includeDetailsFull = {
@@ -88,6 +95,13 @@ export class WorkOrdersService {
           },
         },
         service: true,
+      },
+    },
+    workOrderProducts: {
+      include: {
+        product: {
+          select: { id: true, name: true, price: true },
+        },
       },
     },
   };
@@ -287,6 +301,52 @@ export class WorkOrdersService {
       },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  async addProduct(authUser: AuthUser, workOrderId: number, productId: number, quantity: number) {
+    this.ensureCanManageWorkOrders(authUser);
+    await this.findOne(authUser, workOrderId);
+
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product || !product.isActive) {
+      throw new BadRequestException('Producto no encontrado o inactivo');
+    }
+    if (product.stock < quantity) {
+      throw new BadRequestException(`Stock insuficiente (disponible: ${product.stock})`);
+    }
+
+    const [entry] = await this.prisma.$transaction([
+      this.prisma.workOrderProduct.create({
+        data: { workOrderId, productId, quantity, unitPrice: product.price },
+        include: { product: { select: { id: true, name: true, price: true } } },
+      }),
+      this.prisma.product.update({
+        where: { id: productId },
+        data: { stock: { decrement: quantity } },
+      }),
+    ]);
+
+    return entry;
+  }
+
+  async removeProduct(authUser: AuthUser, workOrderId: number, entryId: number) {
+    this.ensureCanManageWorkOrders(authUser);
+    await this.findOne(authUser, workOrderId);
+
+    const entry = await this.prisma.workOrderProduct.findUnique({ where: { id: entryId } });
+    if (!entry || entry.workOrderId !== workOrderId) {
+      throw new NotFoundException('Entrada no encontrada');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.workOrderProduct.delete({ where: { id: entryId } }),
+      this.prisma.product.update({
+        where: { id: entry.productId },
+        data: { stock: { increment: entry.quantity } },
+      }),
+    ]);
+
+    return { id: entryId };
   }
 
   private getScopedWhere(authUser: AuthUser) {

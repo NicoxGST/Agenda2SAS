@@ -4,7 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { WorkOrderDetail, WorkOrderHistoryEntry, WorkOrderStatus } from "../../types";
 import { WORK_ORDER_STATUS_LABELS } from "../../types";
 import type { Worker } from "../../types";
-import { getWorkOrderDetail, getWorkOrderHistory, updateWorkOrderStatus, updateWorkOrder } from "../../services/work-orders.service";
+import { getWorkOrderDetail, getWorkOrderHistory, updateWorkOrderStatus, updateWorkOrder, addWorkOrderProduct, removeWorkOrderProduct } from "../../services/work-orders.service";
+import type { WorkOrderProduct } from "../../services/work-orders.service";
 import { createDevicePhoto, deleteDevicePhoto, resolvePhotoUrl, updateDevicePhoto, uploadDevicePhoto } from "../../services/devices.service";
 import { getWorkers } from "../../services/availability.service";
 import { ROLES } from "../../constants/roles";
@@ -82,6 +83,12 @@ export function WorkOrderDetailsPage() {
   const [savingLaborCost, setSavingLaborCost] = useState(false);
   const [laborCostError, setLaborCostError]   = useState("");
 
+  const [products, setProducts]               = useState<WorkOrderProduct[]>([]);
+  const [productIdInput, setProductIdInput]   = useState("");
+  const [productQtyInput, setProductQtyInput] = useState("1");
+  const [savingProduct, setSavingProduct]     = useState(false);
+  const [productError, setProductError]       = useState("");
+
   useEffect(() => {
     if (!id) return;
     let ignore = false;
@@ -99,6 +106,7 @@ export function WorkOrderDetailsPage() {
           setPhotos(data.device?.photos ?? []);
           setLaborCostInput(String(data.laborCost));
           setReassignWorkerId(String(data.workerId));
+          setProducts(data.workOrderProducts ?? []);
         }
       } catch (err: unknown) {
         if (!ignore) setError(getErrorMessage(err));
@@ -217,7 +225,35 @@ export function WorkOrderDetailsPage() {
     }
   }
 
-  async function handleUpdateStatus(newStatus: WorkOrderStatus) {
+  async function handleAddProduct() {
+    if (!workOrder || !productIdInput) return;
+    const qty = Math.max(1, Number(productQtyInput) || 1);
+    try {
+      setSavingProduct(true);
+      setProductError("");
+      const entry = await addWorkOrderProduct(workOrder.id, Number(productIdInput), qty);
+      setProducts((prev) => [...prev, entry]);
+      setProductIdInput("");
+      setProductQtyInput("1");
+    } catch (err) {
+      setProductError(err instanceof Error ? err.message : "Error al agregar producto");
+    } finally {
+      setSavingProduct(false);
+    }
+  }
+
+  async function handleRemoveProduct(entryId) {
+    if (!workOrder) return;
+    try {
+      setProductError("");
+      await removeWorkOrderProduct(workOrder.id, entryId);
+      setProducts((prev) => prev.filter((p) => p.id !== entryId));
+    } catch (err) {
+      setProductError(err instanceof Error ? err.message : "Error al quitar producto");
+    }
+  }
+
+  async function handleUpdateStatus(newStatus) {
     if (!workOrder || statusUpdating || workOrder.status === newStatus) return;
     try {
       setStatusUpdating(true);
@@ -573,7 +609,102 @@ export function WorkOrderDetailsPage() {
       </div>
 
       {/* ── Historial ── */}
+            {/* Productos utilizados */}
       <div className="db-card db-card-mb">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Productos utilizados</h3>
+          {products.length > 0 && (
+            <span className="pill pill-muted db-pill-sm">
+              {products.length} ítem{products.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <div className="db-card-body">
+          <div className="form-grid" style={{ marginBottom: "1rem" }}>
+            <label className="field">
+              <span>ID del producto</span>
+              <input
+                placeholder="Ej: 3"
+                type="number"
+                min="1"
+                value={productIdInput}
+                onChange={(e) => setProductIdInput(e.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Cantidad</span>
+              <input
+                type="number"
+                min="1"
+                value={productQtyInput}
+                onChange={(e) => setProductQtyInput(e.target.value)}
+              />
+            </label>
+            <div className="actions">
+              <button
+                className="button button-secondary button-small"
+                disabled={savingProduct || !productIdInput}
+                onClick={handleAddProduct}
+                type="button"
+              >
+                {savingProduct ? "Agregando..." : "Agregar producto"}
+              </button>
+            </div>
+          </div>
+          {productError && <p className="alert alert-error" style={{ marginBottom: "0.75rem" }}>{productError}</p>}
+          {products.length === 0 ? (
+            <div className="empty-state" style={{ marginTop: 0 }}>Sin productos registrados.</div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <th style={{ textAlign: "left", padding: "0.5rem 0", color: "var(--muted)" }}>Producto</th>
+                  <th style={{ textAlign: "right", padding: "0.5rem 0", color: "var(--muted)" }}>Cant.</th>
+                  <th style={{ textAlign: "right", padding: "0.5rem 0", color: "var(--muted)" }}>P. unit.</th>
+                  <th style={{ textAlign: "right", padding: "0.5rem 0", color: "var(--muted)" }}>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "0.5rem 0" }}>{p.product.name}</td>
+                    <td style={{ textAlign: "right", padding: "0.5rem 0" }}>{p.quantity}</td>
+                    <td style={{ textAlign: "right", padding: "0.5rem 0" }}>{formatCurrency(p.unitPrice)}</td>
+                    <td style={{ textAlign: "right", padding: "0.5rem 0" }}>{formatCurrency(p.unitPrice * p.quantity)}</td>
+                    <td style={{ textAlign: "right", padding: "0.5rem 0" }}>
+                      <button
+                        className="button button-danger button-small"
+                        onClick={() => handleRemoveProduct(p.id)}
+                        type="button"
+                      >
+                        Quitar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={3} style={{ padding: "0.75rem 0", fontWeight: 700 }}>Total productos</td>
+                  <td style={{ textAlign: "right", padding: "0.75rem 0", fontWeight: 700 }}>
+                    {formatCurrency(products.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0))}
+                  </td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} style={{ padding: "0 0 0.5rem 0", fontWeight: 700, color: "var(--color-success, #16a34a)" }}>Costo total estimado</td>
+                  <td style={{ textAlign: "right", padding: "0 0 0.5rem 0", fontWeight: 700, color: "var(--color-success, #16a34a)" }}>
+                    {formatCurrency((workOrder?.laborCost ?? 0) + products.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0))}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+      </div>
+<div className="db-card db-card-mb">
         <div className="db-card-header">
           <h3 className="db-card-title">Historial</h3>
           <span className="pill pill-muted db-pill-sm">

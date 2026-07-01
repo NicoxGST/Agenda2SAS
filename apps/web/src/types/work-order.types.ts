@@ -43,6 +43,7 @@ export type WorkOrderDetail = {
     photos: { id: number; url: string; description?: string | null; createdAt: string }[];
   };
   worker?: { id: number; name: string; email: string; role: string };
+  workOrderProducts?: WorkOrderProduct[];
   reservation?: {
     id: number;
     scheduledAt: string;
@@ -52,6 +53,16 @@ export type WorkOrderDetail = {
     client?: { id: number; name: string; email: string };
     service?: { id: number; name: string; description: string; price: number; isActive: boolean };
   } | null;
+};
+
+export type WorkOrderProduct = {
+  id: number;
+  workOrderId: number;
+  productId: number;
+  quantity: number;
+  unitPrice: number;
+  createdAt: string;
+  product: { id: number; name: string; price: number };
 };
 
 export type WorkOrderHistoryEntry = {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -15,6 +16,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { AddWorkOrderProductDto } from './dto/add-work-order-product.dto';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
@@ -74,5 +76,25 @@ export class WorkOrdersController {
     @Body() dto: UpdateWorkOrderStatusDto,
   ) {
     return this.workOrdersService.updateStatus(req.user, id, dto.status);
+  }
+
+  @Post(':id/products')
+  @Roles(Role.WORKER)
+  addProduct(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddWorkOrderProductDto,
+  ) {
+    return this.workOrdersService.addProduct(req.user, id, dto.productId, dto.quantity);
+  }
+
+  @Delete(':id/products/:entryId')
+  @Roles(Role.WORKER)
+  removeProduct(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('entryId', ParseIntPipe) entryId: number,
+  ) {
+    return this.workOrdersService.removeProduct(req.user, id, entryId);
   }
 }
